@@ -553,7 +553,7 @@ const getActiveCar = asyncHandler(async (req, res) => {
 
 
 export { 
-    registerUser, //
+    registerUser, // 
     generateAccessAndRefreshTokens, 
     loginUser, //
     logoutUser, //
@@ -565,9 +565,9 @@ export {
     forgotPassword,
     resetPasswordWithOTP,
     resetPasswordInsideApp,
-    deleteAccount,
-    selectActiveCar,
-    getActiveCar
+    deleteAccount, //
+    selectActiveCar, //
+    getActiveCar // tested
 
  };
 

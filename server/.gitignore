@@ -57,7 +57,11 @@ coverage/
 # Uploads / Media (backend)
 # =========================
 uploads/
-public/uploads/
+
+# uploads / runtime media
+Public/uploads/
+Public/temp/
+
 
 # =========================
 # Cloudinary / Local Assets
