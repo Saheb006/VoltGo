@@ -83,13 +83,13 @@ const listMyCars = asyncHandler(async (req, res) => {
 
 const getCarById = asyncHandler(async (req, res) => {
  
-  const carId = req.params.carId; // ✅ CORRECT
+  const carId = req.params.carId; 
 
 
   const car = await Car.findById(carId);
 
   if (!car) {
-    throw new ApiError(404, "Car not found"); // 🔧 REQUIRED
+    throw new ApiError(404, "Car not found"); 
   }
 
   return res

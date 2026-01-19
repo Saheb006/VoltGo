@@ -93,7 +93,6 @@ const chargerSchema = new mongoose.Schema(
   }
 );
 
-// 🔥 REQUIRED for geo queries (nearby chargers)
 chargerSchema.index({ location: "2dsphere" });
 
 export default mongoose.model("Charger", chargerSchema);
