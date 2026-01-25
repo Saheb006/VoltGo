@@ -43,7 +43,6 @@ const generateAccessAndRefreshTokens = async (userId) => {
 
 const registerUser = asyncHandler(async (req, res) => {
     console.log("FILES =", req.files);
-    console.log("FILE =", req.file);
     let { fullName, email, username, password, role } = req.body;
 
 const normalize = (v) => Array.isArray(v) ? v[0] : v;
@@ -52,9 +51,9 @@ fullName = normalize(fullName);
 email = normalize(email);
 username = normalize(username);
 password = normalize(password);
-role = normalize(role); // 🔧 FIX
+role = normalize(role)?.trim().toLowerCase();
 
-const allowedRoles = ["vehicle_owner", "charger_owner"];
+const allowedRoles = User.schema.path("role").enumValues;
 
 if (!allowedRoles.includes(role)) {
     throw new ApiError(400, "Invalid role selected");

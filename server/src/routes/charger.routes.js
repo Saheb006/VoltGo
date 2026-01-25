@@ -11,8 +11,12 @@ import {
 } from "../controllers/charger.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import upload from "../middlewares/Multer.middleware.js";
+import chargerPortRoutes from "./chargerPort.routes.js";
 
 const router = Router();
+
+// Mount port routes (e.g., /api/v1/chargers/:chargerId/ports)
+router.use("/:chargerId/ports", chargerPortRoutes);
 
 // create charger
 router.post(
