@@ -2,7 +2,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import User from "../models/user.model.js";
 import Car from "../models/car.model.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { uploadOnCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import bcrypt from "bcrypt";
 import fs from "fs/promises";
@@ -322,7 +322,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     // Pass old URL to delete function
     if (previousAvatarUrl) {
   try {
-    await deletePreviousAvatarFromCloudinary(previousAvatarUrl);
+    await deleteFromCloudinary(previousAvatarUrl);
   } catch (err) {
     console.warn("Failed to delete old avatar:", err);
   }
