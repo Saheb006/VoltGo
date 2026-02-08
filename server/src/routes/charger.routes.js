@@ -11,6 +11,13 @@ import {
 } from "../controllers/charger.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import upload from "../middlewares/Multer.middleware.js";
+import {
+  checkActiveSubscription,
+} from "../middlewares/checkActiveSubscription.middleware.js";
+import {
+  checkChargerLimit,
+} from "../middlewares/checkChargerLimit.middleware.js";
+
 import chargerPortRoutes from "./chargerPort.routes.js";
 
 const router = Router();
@@ -22,6 +29,8 @@ router.use("/:chargerId/ports", chargerPortRoutes);
 router.post(
   "/",
   verifyJWT,
+  checkActiveSubscription,
+  checkChargerLimit,
   upload.single("image"), // 🔑 must match req.file usage
   createCharger
 );

@@ -8,10 +8,18 @@ import {
   deleteChargerPort,
 } from "../controllers/chargerPort.controller.js";
 
+import {checkActiveSubscription} from "../middlewares/checkActiveSubscription.middleware.js";
+import {checkPortLimit} from "../middlewares/checkPortLimit.middleware.js";
 const router = Router({ mergeParams: true });
 
 // create port under charger
-router.post("/", verifyJWT, createChargerPort);
+router.post(
+  "/",
+  verifyJWT,
+  checkActiveSubscription, // 🔒 must have active plan
+  checkPortLimit,          // 🔑 enforces max_ports_per_charger
+  createChargerPort
+);
 
 // list ports of charger
 router.get("/", verifyJWT, listChargerPorts);

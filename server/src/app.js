@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import userRoutes from "./routes/user.routes.js";
 import carRoutes from "./routes/car.routes.js";
 import chargerRoutes from "./routes/charger.routes.js";
+import subscriptionRoutes from "./routes/subscription.routes.js";
 
 
 const app = express();
@@ -30,6 +31,8 @@ app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/cars", carRoutes);
 
 app.use("/api/v1/chargers", chargerRoutes);
+
+app.use("/api/v1/subscriptions", subscriptionRoutes);
 
 
 app.get("/home", (req, res) => {
