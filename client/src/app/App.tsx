@@ -1,6 +1,8 @@
-import { Search, MapPin, Car, CreditCard, ChevronDown, User, ClockIcon, Home, Edit, Trash2, Users, LogOut, ChevronRight, Moon, Sun, Zap as ZapIcon } from 'lucide-react';
+import { Search, MapPin, Car, CreditCard, ChevronDown, User, Clock as ClockIcon, Home, Edit, Trash2, Users, LogOut, ChevronRight, Moon, Sun, Zap as ZapIcon, Filter } from 'lucide-react';
 import { StationCard } from './components/StationCard';
-import { useState, useEffect } from 'react';
+import Map from './components/Map';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import type { Station } from '../types';
 import {
   Select,
   SelectContent,
@@ -8,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from './components/ui/select';
-import { fetchNearbyStations, type Station } from '../services/api';
+import { fetchNearbyStations } from '../services/api';
 import { carOptions, paymentOptions, distanceOptions } from '../constants/options';
 
 export default function App() {
@@ -20,6 +22,25 @@ export default function App() {
   const [selectedDistance, setSelectedDistance] = useState('5');
   const [stations, setStations] = useState<Station[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const searchPlaceholderRef = useRef('Search location');
+
+  // Animated placeholder text
+  useEffect(() => {
+    const placeholders = ['Search location', 'VoltGo', 'Find chargers', 'Explore stations'];
+    let index = 0;
+    
+    const interval = setInterval(() => {
+      index = (index + 1) % placeholders.length;
+      searchPlaceholderRef.current = placeholders[index];
+      // Force re-render only for the input using proper type assertion
+      const input = document.querySelector('input[type="text"]') as HTMLInputElement;
+      if (input) {
+        input.placeholder = placeholders[index];
+      }
+    }, 2000); // Change every 2 seconds
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Load stations when user searches
   const handleFindChargers = async () => {
@@ -47,100 +68,57 @@ export default function App() {
 
   return (
     <div className={`min-h-screen pb-20 transition-colors duration-300 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      {/* Header */}
-      <header className={`px-6 py-4 transition-colors duration-300 ${isDarkMode ? 'bg-gray-950 text-white' : 'bg-gray-900 text-white'}`}>
-        <div className="max-w-2xl mx-auto flex items-center gap-3">
-          <ZapIcon className="w-6 h-6" />
-          <h1 className="text-xl">{currentPage === 'home' ? 'EV Charger Finder' : 'Account'}</h1>
-        </div>
-      </header>
 
       {currentPage === 'home' ? (
-        <div className="max-w-2xl mx-auto px-6 py-4 space-y-4">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search location"
-              className={`w-full pl-12 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
-                isDarkMode 
-                  ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-400' 
-                  : 'bg-white border-gray-200 text-gray-900'
-              }`}
-            />
-          </div>
-
+        <div className="">
           {/* Map Container */}
-          <div className={`relative h-64 rounded-xl overflow-hidden ${
-            isDarkMode ? 'bg-gray-800' : 'bg-gray-200'
-          }`}>
-            {/* Map Background with grid pattern */}
-            <div className="absolute inset-0" style={{
-              backgroundImage: isDarkMode 
-                ? 'linear-gradient(rgba(75, 85, 99, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(75, 85, 99, 0.1) 1px, transparent 1px)'
-                : 'linear-gradient(rgba(209, 213, 219, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(209, 213, 219, 0.3) 1px, transparent 1px)',
-              backgroundSize: '20px 20px'
-            }}></div>
-
-            {/* User Location - Car Icon */}
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
+          <div className="relative h-screen">
+            {/* Search */}
+            <div className="absolute top-4 left-4 z-[1000] animate-in fade-in slide-in-from-top-2 duration-500" style={{ width: '320px' }}>
               <div className="relative">
-                <div className="w-3 h-3 bg-blue-500 rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-ping opacity-75"></div>
-                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center shadow-lg border-2 border-white relative z-10">
-                  <Car className="w-4 h-4 text-white" />
-                </div>
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 z-10" />
+                <input
+                  type="text"
+                  placeholder={searchPlaceholderRef.current}
+                  className={`w-full pl-12 pr-4 py-3 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+                    isDarkMode 
+                      ? 'bg-gray-800/90 border-gray-700 text-white placeholder-gray-400 backdrop-blur-sm' 
+                      : 'bg-white/90 border-gray-200 text-gray-900 backdrop-blur-sm'
+                  }`}
+                />
               </div>
             </div>
+            
+            {/* Filter Button */}
+            <div className="absolute top-4 left-[340px] z-[1000] animate-in fade-in slide-in-from-top-2 duration-500">
+              <button className={`p-3 rounded-full transition-colors ${
+                isDarkMode 
+                  ? 'bg-gray-800/90 text-gray-200 hover:bg-gray-700 backdrop-blur-sm' 
+                  : 'bg-white/90 text-gray-600 hover:bg-gray-100 backdrop-blur-sm'
+              }`}>
+                <Filter className="w-5 h-5" />
+              </button>
+            </div>
 
-            {/* Charger Locations - Green Dots (only show when chargers are found) */}
+            <Map 
+              center={[28.6139, 77.2090]}
+              zoom={13}
+              stations={showChargers ? stations.map((station: Station) => ({
+                id: station.id.toString(),
+                position: [station.lat, station.lng] as [number, number],
+                name: station.name,
+                available: station.available
+              })) : []}
+              onStationSelect={(stationId) => {
+                // Handle station selection
+                console.log('Selected station:', stationId);
+              }}
+              isDarkMode={isDarkMode}
+            />
+            
+            {/* Distance selector */}
             {showChargers && (
-              <>
-                {/* Station 1 - top right */}
-                <div className="absolute top-1/4 right-1/3 animate-in fade-in zoom-in duration-500">
-                  <div className="relative">
-                    <div className="w-2 h-2 bg-green-500 rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-ping opacity-75"></div>
-                    <div className="w-4 h-4 bg-green-500 rounded-full relative z-10 shadow-md border-2 border-white"></div>
-                  </div>
-                </div>
-                
-                {/* Station 2 - bottom left */}
-                <div className="absolute bottom-1/3 left-1/4 animate-in fade-in zoom-in duration-500 delay-100">
-                  <div className="relative">
-                    <div className="w-2 h-2 bg-green-500 rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-ping opacity-75"></div>
-                    <div className="w-4 h-4 bg-green-500 rounded-full relative z-10 shadow-md border-2 border-white"></div>
-                  </div>
-                </div>
-                
-                {/* Station 3 - top left */}
-                <div className="absolute top-1/3 left-1/3 animate-in fade-in zoom-in duration-500 delay-200">
-                  <div className="relative">
-                    <div className="w-2 h-2 bg-green-500 rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-ping opacity-75"></div>
-                    <div className="w-4 h-4 bg-green-500 rounded-full relative z-10 shadow-md border-2 border-white"></div>
-                  </div>
-                </div>
-                
-                {/* Station 4 - right side */}
-                <div className="absolute top-2/3 right-1/4 animate-in fade-in zoom-in duration-500 delay-300">
-                  <div className="relative">
-                    <div className="w-2 h-2 bg-green-500 rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-ping opacity-75"></div>
-                    <div className="w-4 h-4 bg-green-500 rounded-full relative z-10 shadow-md border-2 border-white"></div>
-                  </div>
-                </div>
-                
-                {/* Station 5 - center bottom */}
-                <div className="absolute bottom-1/4 left-1/2 animate-in fade-in zoom-in duration-500 delay-400">
-                  <div className="relative">
-                    <div className="w-2 h-2 bg-green-500 rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-ping opacity-75"></div>
-                    <div className="w-4 h-4 bg-green-500 rounded-full relative z-10 shadow-md border-2 border-white"></div>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* Label - only show when chargers are found */}
-            {showChargers && (
-              <div className="absolute bottom-4 left-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+              <div className="absolute top-20 left-4 z-[1000] animate-in fade-in slide-in-from-top-2 duration-500">
                 <Select value={selectedDistance} onValueChange={setSelectedDistance}>
                   <SelectTrigger className={`px-3 py-2 rounded-md shadow-sm text-sm border-0 ${
                     isDarkMode ? 'bg-gray-700 text-gray-200' : 'bg-white text-gray-600'
@@ -157,90 +135,59 @@ export default function App() {
                 </Select>
               </div>
             )}
-          </div>
-
-          {/* Car Selection - Always visible */}
-          <div className="space-y-3">
-            <div className={`flex items-center gap-2 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-              <Car className="w-4 h-4" />
-              <span>Select Your Car</span>
-            </div>
-            <Select value={selectedCar} onValueChange={setSelectedCar}>
-              <SelectTrigger className={`w-full px-4 py-3 border rounded-lg ${
-                isDarkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200'
-              }`}>
-                <SelectValue placeholder="Select a car" />
-              </SelectTrigger>
-              <SelectContent>
-                {carOptions.map((car) => (
-                  <SelectItem key={car.value} value={car.value}>
-                    {car.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Find Chargers Button - only show when chargers not found */}
-          {!showChargers && (
-            <button
-              onClick={handleFindChargers}
-              className={`w-full py-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
-                isDarkMode 
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                  : 'bg-gray-900 hover:bg-gray-800 text-white'
-              }`}
-            >
-              <Search className="w-5 h-5" />
-              Find Chargers
-            </button>
-          )}
-
-          {/* Results section - only show after finding chargers */}
-          {showChargers && (
-            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
-              {/* Station List */}
-              <div className="space-y-3 max-h-64 overflow-y-auto pr-2">
-                {stations.map((station) => (
-                  <StationCard key={station.id} {...station} isDarkMode={isDarkMode} />
+            
+            {/* Station List - Horizontal Scroll */}
+            {showChargers && (
+              <div className="absolute bottom-0 left-0 w-full z-[1000] p-4 overflow-x-auto flex space-x-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                {stations.map((station: Station) => (
+                  <div key={station.id} className="flex-none w-80">
+                    <StationCard {...station} isDarkMode={isDarkMode} />
+                  </div>
                 ))}
               </div>
-
-              {/* Payment Method */}
+            )}
+            
+            {/* Car Selection - Always visible above charger cards */}
+            <div className="absolute bottom-36 left-0 w-full z-[1000] p-4">
               <div className="space-y-3">
                 <div className={`flex items-center gap-2 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  <CreditCard className="w-4 h-4" />
-                  <span>Payment Method</span>
+                  <Car className="w-4 h-4" />
+                  <span>Select Your Car</span>
                 </div>
-                <Select value={selectedPayment} onValueChange={setSelectedPayment}>
+                <Select value={selectedCar} onValueChange={setSelectedCar}>
                   <SelectTrigger className={`w-full px-4 py-3 border rounded-lg ${
                     isDarkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200'
                   }`}>
-                    <SelectValue placeholder="Select a payment method" />
+                    <SelectValue placeholder="Select a car" />
                   </SelectTrigger>
                   <SelectContent>
-                    {paymentOptions.map((payment) => (
-                      <SelectItem key={payment.value} value={payment.value}>
-                        <div className="flex items-center gap-2">
-                          <div className={`w-8 h-5 rounded ${payment.icon}`}></div>
-                          <span>{payment.label}</span>
-                        </div>
+                    {carOptions.map((car) => (
+                      <SelectItem key={car.value} value={car.value}>
+                        {car.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-
-              {/* Book Button */}
-              <button className={`w-full py-4 rounded-lg font-medium transition-colors ${
-                isDarkMode 
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                  : 'bg-gray-900 hover:bg-gray-800 text-white'
-              }`}>
-                Book Charger
-              </button>
             </div>
-          )}
+            
+            {/* Find Chargers Button - only show when chargers not found */}
+            {!showChargers && (
+              <div className="absolute bottom-4 left-4 right-4 z-[1000]">
+                <button
+                  onClick={handleFindChargers}
+                  className={`w-full py-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
+                    isDarkMode 
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                      : 'bg-gray-900 hover:bg-gray-800 text-white'
+                  }`}
+                >
+                  <Search className="w-5 h-5" />
+                  Find Chargers
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       ) : (
         <AccountPage isDarkMode={isDarkMode} onToggleDarkMode={() => setIsDarkMode(!isDarkMode)} />

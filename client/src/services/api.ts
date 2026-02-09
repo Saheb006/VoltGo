@@ -24,6 +24,8 @@ export interface Station {
   parking: string;
   image: string;
   available: boolean;
+  lat: number;
+  lng: number;
 }
 
 export interface UserProfile {
@@ -58,6 +60,8 @@ export const fetchNearbyStations = async (
       parking: '+₹20 parking',
       image: 'https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxFViUyMGNoYXJnaW5nJTIwc3RhdGlvbnxlbnwxfHx8fDE3Njc1OTQ3OTF8MA&ixlib=rb-4.1.0&q=80&w=400',
       available: true,
+      lat: 28.6139,
+      lng: 77.2090,
     },
     {
       id: 2,
@@ -70,6 +74,8 @@ export const fetchNearbyStations = async (
       parking: '+₹30 parking',
       image: 'https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlbGVjdHJpYyUyMGNhciUyMGNoYXJnZXJ8ZW58MXx8fHwxNzY3NTk1MDIwfDA&ixlib=rb-4.1.0&q=80&w=400',
       available: true,
+      lat: 28.6239,
+      lng: 77.2190,
     },
     {
       id: 3,
@@ -82,6 +88,8 @@ export const fetchNearbyStations = async (
       parking: '+₹15 parking',
       image: 'https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxFViUyMGNoYXJnaW5nJTIwc3RhdGlvbnxlbnwxfHx8fDE3Njc1OTQ3OTF8MA&ixlib=rb-4.1.0&q=80&w=400',
       available: false,
+      lat: 28.6039,
+      lng: 77.1990,
     },
   ];
 };

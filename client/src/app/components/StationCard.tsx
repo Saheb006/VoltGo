@@ -13,27 +13,27 @@ import { MapPin, Clock, Zap } from 'lucide-react';
 
 interface StationCardProps {
   name: string;
-  address: string;
-  distance: string;
-  time: string;
-  chargerType: string;
-  price: string;
-  parking: string;
-  image: string;
   available: boolean;
+  address?: string;
+  distance?: string;
+  time?: string;
+  chargerType?: string;
+  price?: string;
+  parking?: string;
+  image?: string;
   isDarkMode?: boolean;
 }
 
 export function StationCard({
   name,
-  address,
-  distance,
-  time,
-  chargerType,
-  price,
-  parking,
-  image,
   available,
+  address = 'Location not specified',
+  distance = 'N/A',
+  time = 'N/A',
+  chargerType = 'Type not specified',
+  price = 'N/A',
+  parking = 'N/A',
+  image = 'https://via.placeholder.com/96',
   isDarkMode = false,
 }: StationCardProps) {
   return (
