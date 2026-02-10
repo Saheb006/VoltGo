@@ -13,6 +13,8 @@
 
 // API Service Layer - Replace these with your actual backend endpoints
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+
 export interface Station {
   id: number;
   name: string;
@@ -35,76 +37,243 @@ export interface UserProfile {
   avatar?: string;
 }
 
-// Mock data - Replace with actual API calls
+// Get authentication token from cookies
+const getAuthToken = (): string | null => {
+  return document.cookie
+    .split('; ')
+    .find(cookie => cookie.trim().startsWith('accessToken='))
+    ?.split('=')[1] || null;
+};
+
+// Fetch nearby chargers from backend
 export const fetchNearbyStations = async (
   distance: string,
   carType: string,
   location: { lat: number; lng: number }
 ): Promise<Station[]> => {
-  // TODO: Replace with your actual API endpoint
-  // const response = await fetch(`${API_BASE_URL}/stations?distance=${distance}&carType=${carType}`, {
-  //   headers: { Authorization: `Bearer ${token}` }
-  // });
-  // return response.json();
+  const token = getAuthToken();
 
-  // Mock data for now
-  return [
-    {
-      id: 1,
-      name: 'Green Energy Hub',
-      address: 'MG Road, Sector 14',
-      distance: '450m',
-      time: '5min',
-      chargerType: 'Type 2',
-      price: '₹12/kWh',
+  // Convert distance from km to meters for backend
+  const radiusInMeters = parseFloat(distance) * 1000;
+  
+  const url = `${API_BASE_URL}/api/v1/chargers/nearby?lat=${location.lat}&lng=${location.lng}&radius=${radiusInMeters}`;
+  console.log('🌐 API Request URL:', url);
+  console.log('📡 Request params:', {
+    lat: location.lat,
+    lng: location.lng,
+    radius: radiusInMeters,
+    distanceKm: distance
+  });
+  
+  const response = await fetch(url, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    }
+  });
+  
+  console.log('📥 Response status:', response.status, response.statusText);
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+
+    // Surface auth issues clearly so UI can react
+    if (response.status === 401) {
+      throw new Error('Authentication required');
+    }
+
+    const rawMessage =
+      (typeof errorData?.message === 'string' && errorData.message) ||
+      (typeof errorData?.error === 'string' && errorData.error) ||
+      (typeof errorData === 'string' && errorData) ||
+      null;
+
+    const message =
+      rawMessage ??
+      (errorData && typeof errorData === 'object'
+        ? JSON.stringify(errorData)
+        : 'Failed to fetch nearby chargers');
+
+    throw new Error(message);
+  }
+
+  const data = await response.json();
+  
+  console.log('API Response:', data);
+  
+  // Handle empty or missing data
+  if (!data || !data.data) {
+    console.warn('No chargers found in response:', data);
+    return [];
+  }
+  
+  // Ensure data.data is an array
+  if (!Array.isArray(data.data)) {
+    console.error('Expected array but got:', typeof data.data, data.data);
+    return [];
+  }
+  
+  // Map backend response to frontend Station interface
+  return data.data.map((charger: any) => {
+    // Handle MongoDB _id (could be ObjectId or string)
+    const chargerId = charger._id?.toString() || charger._id || charger.id;
+    
+    // Ensure location coordinates exist
+    const coordinates = charger.location?.coordinates || [];
+    if (coordinates.length !== 2) {
+      console.warn('Invalid coordinates for charger:', chargerId, coordinates);
+    }
+    
+    return {
+      id: chargerId,
+      name: charger.name || 'Unnamed Charger',
+      address: charger.address || 'Address not available',
+      distance: `${Math.round(charger.distance || 0)}m`,
+      time: `${Math.round((charger.distance || 0) / 100)}min`,
+      chargerType: charger.charger_type || 'AC',
+      price: '₹12/kWh', // You can add pricing to backend later
       parking: '+₹20 parking',
-      image: 'https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxFViUyMGNoYXJnaW5nJTIwc3RhdGlvbnxlbnwxfHx8fDE3Njc1OTQ3OTF8MA&ixlib=rb-4.1.0&q=80&w=400',
-      available: true,
-      lat: 28.6139,
-      lng: 77.2090,
-    },
-    {
-      id: 2,
-      name: 'City Charge Point',
-      address: 'Civil Lines, Near Mall',
-      distance: '1.2km',
-      time: '8min',
-      chargerType: 'CCS',
-      price: '₹15/kWh',
-      parking: '+₹30 parking',
-      image: 'https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlbGVjdHJpYyUyMGNhciUyMGNoYXJnZXJ8ZW58MXx8fHwxNzY3NTk1MDIwfDA&ixlib=rb-4.1.0&q=80&w=400',
-      available: true,
-      lat: 28.6239,
-      lng: 77.2190,
-    },
-    {
-      id: 3,
-      name: 'Power Station Plus',
-      address: 'Park Street, Block A',
-      distance: '2.3km',
-      time: '12min',
-      chargerType: 'Type 2',
-      price: '₹10/kWh',
-      parking: '+₹15 parking',
-      image: 'https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxFViUyMGNoYXJnaW5nJTIwc3RhdGlvbnxlbnwxfHx8fDE3Njc1OTQ3OTF8MA&ixlib=rb-4.1.0&q=80&w=400',
-      available: false,
-      lat: 28.6039,
-      lng: 77.1990,
-    },
-  ];
+      image: charger.image_url || 'https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxFViUyMGNoYXJnaW5nJTIwc3RhdGlvbnxlbnwxfHx8fDE3Njc1OTQ3OTF8MA&ixlib=rb-4.1.0&q=80&w=400',
+      available: charger.status === 'active',
+      lat: coordinates[1] || 0, // MongoDB stores [lng, lat], we need lat
+      lng: coordinates[0] || 0, // MongoDB stores [lng, lat], we need lng
+    };
+  });
 };
 
 export const getUserProfile = async (): Promise<UserProfile> => {
-  // TODO: Replace with your actual API endpoint
-  // const response = await fetch(`${API_BASE_URL}/user/profile`, {
-  //   headers: { Authorization: `Bearer ${token}` }
-  // });
-  // return response.json();
+  const token = getAuthToken();
 
+  const response = await fetch(
+    `${API_BASE_URL}/api/v1/users/me`,
+    {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      }
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Failed to fetch user profile');
+  }
+
+  const data = await response.json();
+  
   return {
-    name: 'Rahul Kumar',
-    email: 'rahul.kumar@example.com',
-    initials: 'RK',
+    name: data.data.fullName || 'User',
+    email: data.data.email || 'user@example.com',
+    initials: data.data.fullName ? data.data.fullName.split(' ').map((n: string) => n[0]).toUpperCase() : 'U',
+    avatar: data.data.avatar
+  };
+};
+
+export const loginUser = async (
+  usernameOrParams: string | { username?: string; email?: string; password: string },
+  passwordArg?: string
+): Promise<{ success: boolean; user?: any; token?: string }> => {
+  const params =
+    typeof usernameOrParams === 'string'
+      ? { username: usernameOrParams, password: passwordArg ?? '' }
+      : usernameOrParams;
+
+  const { username, email, password } = params;
+
+  if ((!username || username.trim() === '') && (!email || email.trim() === '')) {
+    throw new Error('Username or email is required');
+  }
+
+  if (!password || password.trim() === '') {
+    throw new Error('Password is required');
+  }
+
+  const response = await fetch(
+    `${API_BASE_URL}/api/v1/users/login`,
+    {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ username, email, password })
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+
+    // Try to extract a meaningful error message from common shapes
+    const rawMessage =
+      (typeof errorData?.message === 'string' && errorData.message) ||
+      (typeof errorData?.error === 'string' && errorData.error) ||
+      (typeof errorData === 'string' && errorData) ||
+      null;
+
+    // Fallback: JSON‑stringify objects instead of ending up with "[object Object]"
+    const message =
+      rawMessage ??
+      (errorData && typeof errorData === 'object'
+        ? JSON.stringify(errorData)
+        : 'Login failed');
+
+    throw new Error(message);
+  }
+
+  const data = await response.json();
+  
+  // Store tokens in cookies (handled by backend Set-Cookie headers)
+  if (data.success) {
+    return { 
+      success: true, 
+      user: data.data.user,
+      token: data.data.accessToken 
+    };
+  } else {
+    throw new Error(data.message || 'Login failed');
+  }
+};
+
+export const registerUser = async (userData: {
+  fullName: string;
+  email: string;
+  username: string;
+  password: string;
+  role: string;
+  avatar?: File;
+}): Promise<{ success: boolean; user?: any }> => {
+  const formData = new FormData();
+  formData.append('fullName', userData.fullName);
+  formData.append('email', userData.email);
+  formData.append('username', userData.username);
+  formData.append('password', userData.password);
+  formData.append('role', userData.role);
+  if (userData.avatar) {
+    formData.append('avatar', userData.avatar);
+  }
+
+  const response = await fetch(
+    `${API_BASE_URL}/api/v1/users/register`,
+    {
+      method: 'POST',
+      body: formData
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Registration failed');
+  }
+
+  const data = await response.json();
+  
+  return { 
+    success: data.success, 
+    user: data.data 
   };
 };
 

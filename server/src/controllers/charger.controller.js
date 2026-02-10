@@ -214,6 +214,14 @@ const listNearbyChargers = asyncHandler(async (req, res) => {
   const longitude = Number(lng);
   const searchRadius = Number(radius); // meters
 
+  console.log('🔍 Nearby chargers search request:', {
+    lat: lat,
+    lng: lng,
+    radius: radius,
+    parsed: { latitude, longitude, searchRadius },
+    user: req.user.username || req.user.email
+  });
+
   // 🔧 validation
   if (
     Number.isNaN(latitude) ||
@@ -231,18 +239,42 @@ const listNearbyChargers = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid latitude, longitude or radius");
   }
 
-  const chargers = await Charger.find({
-    location: {
-      $near: {
-        $geometry: {
+  // Check total active chargers in DB first
+  const totalActiveChargers = await Charger.countDocuments({ status: "active" });
+  console.log(`📊 Total active chargers in DB: ${totalActiveChargers}`);
+
+  // Use aggregation to get distance in results
+  const chargers = await Charger.aggregate([
+    {
+      $geoNear: {
+        near: {
           type: "Point",
-          coordinates: [longitude, latitude], // MongoDB order
+          coordinates: [longitude, latitude], // MongoDB order [lng, lat]
         },
-        $maxDistance: searchRadius,
+        distanceField: "distance", // Add distance field in meters
+        maxDistance: searchRadius,
+        spherical: true,
+        query: { status: "active" },
       },
     },
-    status: "active",
-  });
+  ]);
+
+  console.log(`✅ Found ${chargers.length} chargers near [${latitude}, ${longitude}] within ${searchRadius}m`);
+  
+  if (chargers.length > 0) {
+    console.log('📍 Sample charger locations:', chargers.slice(0, 3).map(c => ({
+      name: c.name,
+      location: c.location?.coordinates,
+      distance: Math.round(c.distance) + 'm'
+    })));
+  } else if (totalActiveChargers > 0) {
+    // If we have chargers but none nearby, show where they are
+    const sampleChargers = await Charger.find({ status: "active" }).limit(3).select('name location');
+    console.log('📍 Sample charger locations in DB:', sampleChargers.map(c => ({
+      name: c.name,
+      location: c.location?.coordinates
+    })));
+  }
 
   return res
     .status(200)

@@ -1,5 +1,6 @@
 import { Search, MapPin, Car, CreditCard, ChevronDown, User, Clock as ClockIcon, Home, Edit, Trash2, Users, LogOut, ChevronRight, Moon, Sun, Zap as ZapIcon, Filter } from 'lucide-react';
 import { StationCard } from './components/StationCard';
+import LoginPage from './components/LoginPage';
 import Map from './components/Map';
 import { useState, useEffect, useRef, useCallback } from 'react';
 
@@ -15,26 +16,27 @@ import { fetchNearbyStations } from '../services/api';
 import { carOptions, paymentOptions, distanceOptions } from '../constants/options';
 
 export default function App() {
-
   const [selectedCar, setSelectedCar] = useState('tata-nexon');
   const [selectedPayment, setSelectedPayment] = useState('google-pay');
   const [showChargers, setShowChargers] = useState(false);
   const [currentPage, setCurrentPage] = useState<'home' | 'account'>('home');
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [selectedDistance, setSelectedDistance] = useState('5');
+  const [selectedDistance, setSelectedDistance] = useState('10');
   const [stations, setStations] = useState<Station[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [userLocation, setUserLocation] = useState<[number, number]>([28.6139, 77.2090]);
+  const [userLocation, setUserLocation] = useState<[number, number]>([11.3493, 142.1996]);
   const [userLocationAccuracy, setUserLocationAccuracy] = useState<number | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const hasReceivedLocationRef = useRef(false);
   const searchPlaceholderRef = useRef('Search location');
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   // Request location permission and get user location on mount
   useEffect(() => {
 
     if (!('geolocation' in navigator)) {
       console.log('Geolocation is not supported by this browser');
-      setUserLocation([28.6139, 77.2090]);
+      setUserLocation([11.3493, 142.1996]);
       return;
     }
 
@@ -67,9 +69,9 @@ export default function App() {
         message: error.message,
       });
 
-      // If permission denied, keep the default fallback (Delhi) and stop trying.
+      // If permission denied, keep default fallback and stop trying.
       if (error.code === error.PERMISSION_DENIED) {
-        setUserLocation([28.6139, 77.2090]);
+        setUserLocation([11.3493, 142.1996]);
         return;
       }
 
@@ -149,10 +151,8 @@ export default function App() {
     const interval = setInterval(() => {
       index = (index + 1) % placeholders.length;
       searchPlaceholderRef.current = placeholders[index];
-      // Force re-render only for the input using proper type assertion
-      const input = document.querySelector('input[type="text"]') as HTMLInputElement;
-      if (input) {
-        input.placeholder = placeholders[index];
+      if (searchInputRef.current) {
+        searchInputRef.current.placeholder = placeholders[index];
       }
     }, 2000); // Change every 2 seconds
 
@@ -163,14 +163,63 @@ export default function App() {
   const handleFindChargers = async () => {
     setIsLoading(true);
     try {
-      // Use actual user location
-      const userLocationObj = { lat: userLocation[0], lng: userLocation[1] };
+      // Get fresh location before searching
+      const getCurrentLocation = (): Promise<[number, number]> => {
+        return new Promise((resolve, reject) => {
+          if (!('geolocation' in navigator)) {
+            console.warn('Geolocation not available, using stored location');
+            resolve(userLocation);
+            return;
+          }
+
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const { latitude, longitude } = position.coords;
+              console.log('📍 Current GPS location:', { latitude, longitude });
+              resolve([latitude, longitude]);
+            },
+            (error) => {
+              console.warn('Failed to get fresh location, using stored:', error);
+              resolve(userLocation);
+            },
+            {
+              enableHighAccuracy: true,
+              timeout: 10000,
+              maximumAge: 60000, // Accept location up to 1 minute old
+            }
+          );
+        });
+      };
+
+      // Get fresh location
+      const currentLocation = await getCurrentLocation();
+      const userLocationObj = { lat: currentLocation[0], lng: currentLocation[1] };
+      
+      console.log('🔍 Searching for chargers:', {
+        distance: `${selectedDistance}km`,
+        location: `[${userLocationObj.lat.toFixed(6)}, ${userLocationObj.lng.toFixed(6)}]`,
+        radius: `${parseFloat(selectedDistance) * 1000}m`,
+        carType: selectedCar
+      });
+      
       const data = await fetchNearbyStations(selectedDistance, selectedCar, userLocationObj);
+      console.log('✅ Found stations:', data);
+      console.log('📊 Number of stations:', data.length);
+      
+      if (data.length === 0) {
+        alert(`No charging stations found within ${selectedDistance}km of your location [${userLocationObj.lat.toFixed(4)}, ${userLocationObj.lng.toFixed(4)}]. Try increasing the search radius.`);
+      }
+      
       setStations(data);
       setShowChargers(true);
-    } catch (error) {
-      console.error('Error fetching stations:', error);
-      // Handle error appropriately
+    } catch (error: unknown) {
+      console.error('❌ Error fetching stations:', error);
+      // Show user-friendly error message
+      if (error instanceof Error && error.message === 'Authentication required') {
+        alert('Please login to search for nearby chargers');
+      } else {
+        alert(`Failed to find nearby chargers: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -184,27 +233,35 @@ export default function App() {
   }, [selectedDistance]);
 
   return (
-    <div className={`min-h-screen pb-20 transition-colors duration-300 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+    // Show login page if not authenticated, otherwise show main app
+    !isAuthenticated ? (
+      <LoginPage 
+        onLoginSuccess={() => setIsAuthenticated(true)} 
+        isDarkMode={isDarkMode} 
+      />
+    ) : (
+      <div className={`min-h-screen pb-20 transition-colors duration-300 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
 
-      {currentPage === 'home' ? (
-        <div className="">
-          {/* Map Container */}
-          <div className="relative h-screen">
-            {/* Search */}
-            <div className="absolute top-4 left-4 z-[1000] animate-in fade-in slide-in-from-top-2 duration-500" style={{ width: '320px' }}>
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 z-10" />
-                <input
-                  type="text"
-                  placeholder={searchPlaceholderRef.current}
-                  className={`w-full pl-12 pr-4 py-3 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
-                    isDarkMode 
-                      ? 'bg-gray-800/90 border-gray-700 text-white placeholder-gray-400 backdrop-blur-sm' 
-                      : 'bg-white/90 border-gray-200 text-gray-900 backdrop-blur-sm'
-                  }`}
-                />
+        {currentPage === 'home' ? (
+          <div className="">
+            {/* Map Container */}
+            <div className="relative h-screen">
+              {/* Search */}
+              <div className="absolute top-4 left-4 z-[1000] animate-in fade-in slide-in-from-top-2 duration-500" style={{ width: '320px' }}>
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 z-10" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    placeholder={searchPlaceholderRef.current}
+                    className={`w-full pl-12 pr-4 py-3 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+                      isDarkMode 
+                        ? 'bg-gray-800/90 border-gray-700 text-white placeholder-gray-400 backdrop-blur-sm' 
+                        : 'bg-white/90 border-gray-200 text-gray-900 backdrop-blur-sm'
+                    }`}
+                  />
+                </div>
               </div>
-            </div>
             
             {/* Filter Button */}
             <div className="absolute top-4 left-[340px] z-[1000] animate-in fade-in slide-in-from-top-2 duration-500">
@@ -248,6 +305,7 @@ export default function App() {
                     <SelectItem value="3">Nearby Stations (3km)</SelectItem>
                     <SelectItem value="4">Nearby Stations (4km)</SelectItem>
                     <SelectItem value="5">Nearby Stations (5km)</SelectItem>
+                    <SelectItem value="10">Nearby Stations (10km)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -290,17 +348,38 @@ export default function App() {
             
             {/* Find Chargers Button - only show when chargers not found */}
             {!showChargers && (
-              <div className="absolute bottom-4 left-4 right-4 z-[1000]">
+              <div className="absolute bottom-4 left-4 right-4 z-[1000] space-y-2">
+                {/* Location indicator */}
+                <div className={`px-4 py-2 rounded-lg text-xs ${
+                  isDarkMode 
+                    ? 'bg-gray-800/90 text-gray-300 backdrop-blur-sm' 
+                    : 'bg-white/90 text-gray-600 backdrop-blur-sm'
+                }`}>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-3 h-3" />
+                    <span>Searching from: {userLocation[0].toFixed(6)}, {userLocation[1].toFixed(6)}</span>
+                  </div>
+                </div>
                 <button
                   onClick={handleFindChargers}
-                  className={`w-full py-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
+                  disabled={isLoading}
+                  className={`w-full py-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
                     isDarkMode 
                       ? 'bg-blue-600 hover:bg-blue-700 text-white' 
                       : 'bg-gray-900 hover:bg-gray-800 text-white'
                   }`}
                 >
-                  <Search className="w-5 h-5" />
-                  Find Chargers
+                  {isLoading ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      Searching...
+                    </>
+                  ) : (
+                    <>
+                      <Search className="w-5 h-5" />
+                      Find Chargers
+                    </>
+                  )}
                 </button>
               </div>
             )}
@@ -344,6 +423,7 @@ export default function App() {
         </div>
       </nav>
     </div>
+  ) // Added closing parenthesis here
   );
 }
 
