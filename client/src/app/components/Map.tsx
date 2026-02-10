@@ -94,18 +94,16 @@ export default function Map({
     }
   }, [isDarkMode, mapInitialized]);
 
-  // Update map center and zoom when props change (but only if they actually change)
+  // Update map center when *location changes*.
+  // Do NOT try to control zoom from React props, otherwise user zoom interactions will be reset.
   useEffect(() => {
-    if (mapRef.current && mapInitialized) {
-      const currentCenter = mapRef.current.getCenter();
-      const currentZoom = mapRef.current.getZoom();
-      
-      // Only update if center or zoom actually changed
-      if (currentCenter.lat !== center[0] || currentCenter.lng !== center[1] || currentZoom !== zoom) {
-        mapRef.current.setView(center, zoom);
-      }
+    if (!mapRef.current || !mapInitialized) return;
+
+    const currentCenter = mapRef.current.getCenter();
+    if (currentCenter.lat !== center[0] || currentCenter.lng !== center[1]) {
+      mapRef.current.setView(center, mapRef.current.getZoom(), { animate: false });
     }
-  }, [center, zoom, mapInitialized]);
+  }, [center, mapInitialized]);
 
   // Add/update markers when stations change
   useEffect(() => {
@@ -118,9 +116,61 @@ export default function Map({
     const userMarker = L.marker(center, {
       icon: L.divIcon({
         className: 'user-location-marker',
-        html: '📍',
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
+        html: `
+          <div style="
+            position: relative;
+            width: 50px;
+            height: 50px;
+          ">
+            <!-- Directional cone -->
+            <div style="
+              position: absolute;
+              top: 3px;
+              left: 50%;
+              transform: translateX(-50%);
+              width: 0;
+              height: 0;
+              border-left: 12px solid transparent;
+              border-right: 12px solid transparent;
+              border-bottom: 20px solid rgba(59, 130, 246, 0.4);
+              filter: blur(0.5px);
+              z-index: 1;
+            "></div>
+            
+            <!-- Blue circular base -->
+            <div style="
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              width: 20px;
+              height: 20px;
+              background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+              border-radius: 50%;
+              border: 2px solid rgba(255, 255, 255, 0.9);
+              box-shadow: 
+                0 0 0 3px rgba(59, 130, 246, 0.2),
+                0 2px 8px rgba(0, 0, 0, 0.15),
+                0 0 15px rgba(59, 130, 246, 0.1);
+              z-index: 2;
+            "></div>
+            
+            <!-- Inner dot -->
+            <div style="
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              width: 6px;
+              height: 6px;
+              background: white;
+              border-radius: 50%;
+              z-index: 3;
+            "></div>
+          </div>
+        `,
+        iconSize: [50, 50],
+        iconAnchor: [25, 25],
       })
     }).addTo(map);
     markers.push(userMarker);

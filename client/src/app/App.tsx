@@ -2,6 +2,7 @@ import { Search, MapPin, Car, CreditCard, ChevronDown, User, Clock as ClockIcon,
 import { StationCard } from './components/StationCard';
 import Map from './components/Map';
 import { useState, useEffect, useRef, useCallback } from 'react';
+
 import type { Station } from '../types';
 import {
   Select,
@@ -14,6 +15,7 @@ import { fetchNearbyStations } from '../services/api';
 import { carOptions, paymentOptions, distanceOptions } from '../constants/options';
 
 export default function App() {
+
   const [selectedCar, setSelectedCar] = useState('tata-nexon');
   const [selectedPayment, setSelectedPayment] = useState('google-pay');
   const [showChargers, setShowChargers] = useState(false);
@@ -22,7 +24,122 @@ export default function App() {
   const [selectedDistance, setSelectedDistance] = useState('5');
   const [stations, setStations] = useState<Station[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [userLocation, setUserLocation] = useState<[number, number]>([28.6139, 77.2090]);
+  const [userLocationAccuracy, setUserLocationAccuracy] = useState<number | null>(null);
+  const hasReceivedLocationRef = useRef(false);
   const searchPlaceholderRef = useRef('Search location');
+
+  // Request location permission and get user location on mount
+  useEffect(() => {
+
+    if (!('geolocation' in navigator)) {
+      console.log('Geolocation is not supported by this browser');
+      setUserLocation([28.6139, 77.2090]);
+      return;
+    }
+
+    let watchId: number | null = null;
+    let retryTimer: number | null = null;
+    let attempts = 0;
+    let coarseFallbackTimer: number | null = null;
+
+    const onPosition = (position: GeolocationPosition) => {
+      const { latitude, longitude, accuracy } = position.coords;
+
+      setUserLocationAccuracy(accuracy);
+
+      // Always accept the first reading so you don't remain stuck on the default.
+      // After that, ignore very low-quality fixes to reduce random jumps.
+      if (!hasReceivedLocationRef.current) {
+        hasReceivedLocationRef.current = true;
+        setUserLocation([latitude, longitude]);
+        return;
+      }
+
+      if (Number.isFinite(accuracy) && accuracy > 150) return;
+
+      setUserLocation([latitude, longitude]);
+    };
+
+    const onError = (error: GeolocationPositionError) => {
+      console.error('Error getting location:', {
+        code: error.code,
+        message: error.message,
+      });
+
+      // If permission denied, keep the default fallback (Delhi) and stop trying.
+      if (error.code === error.PERMISSION_DENIED) {
+        setUserLocation([28.6139, 77.2090]);
+        return;
+      }
+
+      // If we still don't have any fix, allow a coarse fallback after errors.
+      if (!hasReceivedLocationRef.current) {
+        setUserLocationAccuracy(null);
+      }
+    };
+
+    const requestOnce = () => {
+      navigator.geolocation.getCurrentPosition(onPosition, onError, {
+        enableHighAccuracy: true,
+        timeout: 20000,
+        maximumAge: 0,
+      });
+    };
+
+    // First attempt immediately
+    requestOnce();
+
+    // Retry a few times until we get the first fix (some devices need time to lock GPS).
+    retryTimer = window.setInterval(() => {
+      if (hasReceivedLocationRef.current) {
+        if (retryTimer !== null) window.clearInterval(retryTimer);
+        retryTimer = null;
+        return;
+      }
+
+      attempts += 1;
+      if (attempts >= 5) {
+        if (retryTimer !== null) window.clearInterval(retryTimer);
+        retryTimer = null;
+        return;
+      }
+
+      requestOnce();
+    }, 4000);
+
+    watchId = navigator.geolocation.watchPosition(onPosition, onError, {
+      enableHighAccuracy: true,
+      timeout: 20000,
+      maximumAge: 0,
+    });
+
+    // If high-accuracy GPS doesn't resolve quickly (common indoors), fall back to a coarse fix
+    // so you at least see a non-default location.
+    coarseFallbackTimer = window.setTimeout(() => {
+      if (hasReceivedLocationRef.current) return;
+
+      navigator.geolocation.getCurrentPosition(onPosition, onError, {
+        enableHighAccuracy: false,
+        timeout: 10000,
+        maximumAge: 60000,
+      });
+    }, 8000);
+
+    return () => {
+      if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+
+      if (retryTimer !== null) {
+        window.clearInterval(retryTimer);
+      }
+
+      if (coarseFallbackTimer !== null) {
+        window.clearTimeout(coarseFallbackTimer);
+      }
+    };
+  }, []);
 
   // Animated placeholder text
   useEffect(() => {
@@ -46,9 +163,9 @@ export default function App() {
   const handleFindChargers = async () => {
     setIsLoading(true);
     try {
-      // Replace with actual location coordinates from user's location or search
-      const mockLocation = { lat: 28.6139, lng: 77.2090 };
-      const data = await fetchNearbyStations(selectedDistance, selectedCar, mockLocation);
+      // Use actual user location
+      const userLocationObj = { lat: userLocation[0], lng: userLocation[1] };
+      const data = await fetchNearbyStations(selectedDistance, selectedCar, userLocationObj);
       setStations(data);
       setShowChargers(true);
     } catch (error) {
@@ -101,7 +218,7 @@ export default function App() {
             </div>
 
             <Map 
-              center={[28.6139, 77.2090]}
+              center={userLocation}
               zoom={13}
               stations={showChargers ? stations.map((station: Station) => ({
                 id: station.id.toString(),
