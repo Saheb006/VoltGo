@@ -4,17 +4,17 @@ import connectDB from "./db/index.js";
 import app from "./app.js";
 
 const start = async () => {
-  try {
-    await connectDB();
+    try {
+        await connectDB();
 
-    const PORT = process.env.PORT || 9000;
+        const PORT = process.env.PORT || 9000;
 
-    app.listen(PORT, () => {
-      console.log(`Server started at port ${PORT}`);
-    });
-  } catch (error) {
-    console.log("Error starting the server:", error);
-  }
+        app.listen(PORT, () => {
+            console.log(`Server started at port ${PORT}`);
+        });
+    } catch (error) {
+        console.log("Error starting the server:", error);
+    }
 };
 
 start();

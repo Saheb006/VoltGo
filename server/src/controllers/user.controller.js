@@ -2,14 +2,16 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import User from "../models/user.model.js";
 import Car from "../models/car.model.js";
-import { uploadOnCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js";
+import {
+    uploadOnCloudinary,
+    deleteFromCloudinary,
+} from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import bcrypt from "bcrypt";
 import fs from "fs/promises";
 import crypto from "crypto";
 import sendEmail from "../utils/sendEmail.js";
 import jwt from "jsonwebtoken";
-
 
 const generateAccessAndRefreshTokens = async (userId) => {
     try {
@@ -40,24 +42,23 @@ const generateAccessAndRefreshTokens = async (userId) => {
     }
 };
 
-
 const registerUser = asyncHandler(async (req, res) => {
     console.log("FILES =", req.files);
     let { fullName, email, username, password, role } = req.body;
 
-const normalize = (v) => Array.isArray(v) ? v[0] : v;
+    const normalize = (v) => (Array.isArray(v) ? v[0] : v);
 
-fullName = normalize(fullName);
-email = normalize(email);
-username = normalize(username);
-password = normalize(password);
-role = normalize(role)?.trim().toLowerCase();
+    fullName = normalize(fullName);
+    email = normalize(email);
+    username = normalize(username);
+    password = normalize(password);
+    role = normalize(role)?.trim().toLowerCase();
 
-const allowedRoles = User.schema.path("role").enumValues;
+    const allowedRoles = User.schema.path("role").enumValues;
 
-if (!allowedRoles.includes(role)) {
-    throw new ApiError(400, "Invalid role selected");
-}
+    if (!allowedRoles.includes(role)) {
+        throw new ApiError(400, "Invalid role selected");
+    }
 
     if (
         [fullName, email, username, password].some(
@@ -75,13 +76,13 @@ if (!allowedRoles.includes(role)) {
         throw new ApiError(409, "User with email or username already exists");
     }
 
-    const avatarLocalPath = req.files?.avatar[0]?.path;   // get avatar path from multer
+    const avatarLocalPath = req.files?.avatar[0]?.path; // get avatar path from multer
 
     if (!avatarLocalPath) {
-        throw new ApiError(400, "Avatar file is required")
+        throw new ApiError(400, "Avatar file is required");
     }
 
-    const avatar = await uploadOnCloudinary(avatarLocalPath)
+    const avatar = await uploadOnCloudinary(avatarLocalPath);
 
     // ⬇️ moved log here, after avatar is defined
     console.log({
@@ -93,12 +94,12 @@ if (!allowedRoles.includes(role)) {
             fullName: typeof fullName,
             email: typeof email,
             username: typeof username,
-            password: typeof password
+            password: typeof password,
         },
     });
 
     if (!avatar) {
-        throw new ApiError(405, "Avatar file is required")
+        throw new ApiError(405, "Avatar file is required");
     }
 
     const user = await User.create({
@@ -123,7 +124,9 @@ if (!allowedRoles.includes(role)) {
 
     return res
         .status(201)
-        .json(new ApiResponse(200, createdUser, "User registered Successfully"));
+        .json(
+            new ApiResponse(200, createdUser, "User registered Successfully")
+        );
 });
 
 const loginUser = asyncHandler(async (req, res) => {
@@ -151,8 +154,9 @@ const loginUser = asyncHandler(async (req, res) => {
 
     // 🔒 role stays locked in DB (no check here)
 
-    const { accessToken, refreshToken } =
-        await generateAccessAndRefreshTokens(user._id);
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
+        user._id
+    );
 
     const loggedInUser = await User.findById(user._id).select(
         "-password -refreshToken"
@@ -181,11 +185,11 @@ const logoutUser = asyncHandler(async (req, res) => {
         req.user._id,
         {
             $set: {
-                refreshToken: undefined
-            }
+                refreshToken: undefined,
+            },
         },
         {
-            new: true
+            new: true,
         }
     );
 
@@ -202,55 +206,61 @@ const logoutUser = asyncHandler(async (req, res) => {
 });
 
 const refreshJWTtocken = asyncHandler(async (req, res) => {
-
-    const incomingRefreshTocken = req.cookies?.refreshToken || req.body?.refreshToken;
+    const incomingRefreshTocken =
+        req.cookies?.refreshToken || req.body?.refreshToken;
 
     if (!incomingRefreshTocken) {
         throw new ApiError(401, "No refresh token provided");
     }
 
     try {
-        const decodedTocken = jwt.verify(incomingRefreshTocken, process.env.REFRESH_TOKEN_SECRET);
-    
+        const decodedTocken = jwt.verify(
+            incomingRefreshTocken,
+            process.env.REFRESH_TOKEN_SECRET
+        );
+
         const user = await User.findById(decodedTocken?._id);
-    
+
         if (!user) {
             throw new ApiError(404, "Invalid refresh token - user not found");
         }
-    
+
         if (user.refreshToken !== incomingRefreshTocken) {
             throw new ApiError(401, "Refresh token does not match");
         }
-    
-         const options = {
+
+        const options = {
             httpOnly: true,
             secure: false,
         };
-    
-        const { accessToken, newRefreshTocken } = await generateAccessAndRefreshTokens(user?._id);
-    
+
+        const { accessToken, newRefreshTocken } =
+            await generateAccessAndRefreshTokens(user?._id);
+
         return res
             .status(200)
             .cookie("accessToken", accessToken, options)
             .cookie("refreshToken", newRefreshTocken, options)
-            .json(new ApiResponse(200, { accessToken, refreshToken: newRefreshTocken}, "JWT tokens refreshed successfully"));
-    
+            .json(
+                new ApiResponse(
+                    200,
+                    { accessToken, refreshToken: newRefreshTocken },
+                    "JWT tokens refreshed successfully"
+                )
+            );
     } catch (error) {
         throw new ApiError(401, "Invalid or expired refresh token");
-        
     }
 });
 
 const changePassword = asyncHandler(async (req, res) => {
-    
     const { oldPassword, newPassword } = req.body;
 
     const user = await User.findById(req.user?._id);
 
-        if (!user) {
+    if (!user) {
         throw new ApiError(404, "User not found");
-        }
-
+    }
 
     const isOldPasswordCorrect = await user.isPasswordCorrect(oldPassword);
 
@@ -258,8 +268,8 @@ const changePassword = asyncHandler(async (req, res) => {
         throw new ApiError(401, "Old password is incorrect");
     }
 
-    user.password = newPassword;   
-    await user.save({validateBeforeSave: false});
+    user.password = newPassword;
+    await user.save({ validateBeforeSave: false });
 
     return res
         .status(200)
@@ -273,8 +283,7 @@ const getUser = asyncHandler(async (req, res) => {
 });
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
-   
-    const { fullName, email, username} = req.body;
+    const { fullName, email, username } = req.body;
 
     if (!fullName || !email || !username) {
         throw new ApiError(400, "Full name , email and username are required");
@@ -283,23 +292,26 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     const user = await User.findByIdAndUpdate(
         req.user._id,
         {
-            $set: { fullName : fullName, email: email, username: username }
+            $set: { fullName: fullName, email: email, username: username },
         },
 
         { new: true }
-    ).select("-password -refreshToken")
+    ).select("-password -refreshToken");
 
     return res
         .status(200)
-        .json(new ApiResponse(200, user, "User account details updated successfully"));
+        .json(
+            new ApiResponse(
+                200,
+                user,
+                "User account details updated successfully"
+            )
+        );
 });
 
 const updateUserAvatar = asyncHandler(async (req, res) => {
-
     const avatarLocalPath = req.file?.path;
     if (!avatarLocalPath) throw new ApiError(400, "Avatar file is required");
-
-
 
     // Get old avatar BEFORE updating
     const userBeforeUpdate = await User.findById(req.user._id);
@@ -321,15 +333,14 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 
     // Pass old URL to delete function
     if (previousAvatarUrl) {
-  try {
-    await deleteFromCloudinary(previousAvatarUrl);
-  } catch (err) {
-    console.warn("Failed to delete old avatar:", err);
-  }
-}
+        try {
+            await deleteFromCloudinary(previousAvatarUrl);
+        } catch (err) {
+            console.warn("Failed to delete old avatar:", err);
+        }
+    }
 
-
-     try {
+    try {
         await fs.unlink(avatarLocalPath);
     } catch (err) {
         console.warn("Failed to remove temp avatar file:", err);
@@ -337,9 +348,14 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 
     return res
         .status(200)
-        .json(new ApiResponse(200, updatedUser, "User avatar updated successfully"));
+        .json(
+            new ApiResponse(
+                200,
+                updatedUser,
+                "User avatar updated successfully"
+            )
+        );
 });
-
 
 const forgotPassword = asyncHandler(async (req, res) => {
     const { email, username } = req.body;
@@ -349,14 +365,16 @@ const forgotPassword = asyncHandler(async (req, res) => {
     }
 
     const user = await User.findOne({
-        $or: [{ email }, { username }]
+        $or: [{ email }, { username }],
     });
 
     // Do NOT reveal user existence
     if (!user) {
-        return res.status(200).json(
-            new ApiResponse(200, {}, "If account exists, OTP has been sent")
-        );
+        return res
+            .status(200)
+            .json(
+                new ApiResponse(200, {}, "If account exists, OTP has been sent")
+            );
     }
 
     const otp = crypto.randomInt(100000, 999999).toString();
@@ -372,11 +390,10 @@ const forgotPassword = asyncHandler(async (req, res) => {
         text: `Your OTP is ${otp}. It expires in 10 minutes.`,
     });
 
-    return res.status(200).json(
-        new ApiResponse(200, {}, "OTP sent to registered email")
-    );
+    return res
+        .status(200)
+        .json(new ApiResponse(200, {}, "OTP sent to registered email"));
 });
-
 
 const resetPasswordWithOTP = asyncHandler(async (req, res) => {
     const { email, otp, newPassword } = req.body;
@@ -483,38 +500,33 @@ const deleteAccount = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, {}, "Account deleted successfully"));
 });
 
-
-
-
-
 const selectActiveCar = asyncHandler(async (req, res) => {
-  const { carId } = req.body; // ✅ FIX
+    const { carId } = req.body; // ✅ FIX
 
-  if (!carId) {
-    throw new ApiError(400, "carId is required");
-  }
+    if (!carId) {
+        throw new ApiError(400, "carId is required");
+    }
 
-  const car = await Car.findById(carId);
-  if (!car) {
-    throw new ApiError(404, "Car not found");
-  }
+    const car = await Car.findById(carId);
+    if (!car) {
+        throw new ApiError(404, "Car not found");
+    }
 
-  if (car.owner_id.toString() !== req.user._id.toString()) {
-    throw new ApiError(403, "You are not allowed to select this car");
-  }
+    if (car.owner_id.toString() !== req.user._id.toString()) {
+        throw new ApiError(403, "You are not allowed to select this car");
+    }
 
-  if (req.user.role !== "vehicle_owner") {
-    throw new ApiError(403, "Only vehicle owners can select cars");
-  }
+    if (req.user.role !== "vehicle_owner") {
+        throw new ApiError(403, "Only vehicle owners can select cars");
+    }
 
-  req.user.active_car_id = car._id;
-  await req.user.save();
+    req.user.active_car_id = car._id;
+    await req.user.save();
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, {}, "Car selected successfully"));
+    return res
+        .status(200)
+        .json(new ApiResponse(200, {}, "Car selected successfully"));
 });
-
 
 const getActiveCar = asyncHandler(async (req, res) => {
     // 🔒 Only vehicle owners have active cars
@@ -543,30 +555,20 @@ const getActiveCar = asyncHandler(async (req, res) => {
 
 // getCarStats            // OPTIONAL (but impressive)
 
-
-
-
-
-
-
-
-
-export { 
-    registerUser, // 
-    generateAccessAndRefreshTokens, 
+export {
+    registerUser, //
+    generateAccessAndRefreshTokens,
     loginUser, //
     logoutUser, //
-    refreshJWTtocken,//
-    changePassword,//
-    getUser,//
-    updateAccountDetails,//
-    updateUserAvatar,//
+    refreshJWTtocken, //
+    changePassword, //
+    getUser, //
+    updateAccountDetails, //
+    updateUserAvatar, //
     forgotPassword,
     resetPasswordWithOTP,
     resetPasswordInsideApp,
     deleteAccount, //
     selectActiveCar, //
-    getActiveCar // tested
-
- };
-
+    getActiveCar, // tested
+};

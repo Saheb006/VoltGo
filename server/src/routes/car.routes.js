@@ -1,15 +1,14 @@
 import { Router } from "express";
 import {
-  postCar,
-  listMyCars,
-  getCarById,
-  updateCar,
-  deleteCar,
+    postCar,
+    listMyCars,
+    getCarById,
+    updateCar,
+    deleteCar,
 } from "../controllers/car.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 const router = Router();
-
 
 // create a new car
 router.post("/postcar", verifyJWT, postCar);
@@ -25,6 +24,5 @@ router.patch("/:carId", verifyJWT, updateCar);
 
 // delete car
 router.delete("/:carId", verifyJWT, deleteCar); //everything tested
-
 
 export default router;
