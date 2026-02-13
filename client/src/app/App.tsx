@@ -21,11 +21,12 @@ import {
     Shield,
 } from "lucide-react";
 
-import { StationCard } from "./components/StationCard";
+import axios from 'axios';
 
 import LoginPage from "./components/LoginPage";
-
-import Map from "./components/Map";
+import MapComponent from "./components/Map";
+import { StationCard } from "./components/StationCard";
+import { MyVehiclesModal } from "../components/MyVehiclesModal";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 
@@ -72,7 +73,7 @@ import {
     type UserProfile,
 } from "../services/api";
 
-import { carOptions, paymentOptions, distanceOptions } from "../constants/options";
+import { paymentOptions, distanceOptions} from "../constants/options";
 
 function UpdateAccountModal({
     isOpen,
@@ -1164,6 +1165,8 @@ export default function App() {
 
     const [selectedPayment, setSelectedPayment] = useState("google-pay");
 
+    const [showVehiclesModal, setShowVehiclesModal] = useState(false);
+
     const [showChargers, setShowChargers] = useState(false);
 
     const [currentPage, setCurrentPage] = useState<"home" | "account" | "edit-profile">("home");
@@ -1196,11 +1199,13 @@ export default function App() {
         password: "",
     });
 
-    const hasReceivedLocationRef = useRef(false);
+    const [userVehicles, setUserVehicles] = useState<any[]>([]);
 
     const searchPlaceholderRef = useRef("Search location");
 
     const searchInputRef = useRef<HTMLInputElement | null>(null);
+
+    const hasReceivedLocationRef = useRef(false);
 
     // Request location permission and get user location on mount
 
@@ -1482,6 +1487,18 @@ export default function App() {
         }
     };
 
+    const fetchUserVehicles = async () => {
+        try {
+            const response = await axios.get('http://localhost:9000/api/v1/cars/my', {
+                withCredentials: true
+            });
+            setUserVehicles(response.data.data || []);
+        } catch (err) {
+            console.error('Error fetching vehicles:', err);
+            setUserVehicles([]);
+        }
+    };
+
     // Load user profile data
 
     useEffect(() => {
@@ -1491,6 +1508,8 @@ export default function App() {
                     const profile = await getUserProfile();
 
                     setUserProfile(profile);
+
+                    await fetchUserVehicles();
                 } catch (error) {
                     console.error("Failed to load user profile:", error);
                 }
@@ -1558,7 +1577,7 @@ export default function App() {
                                 </button>
                             </div>
 
-                            <Map
+                            <MapComponent
                                 center={userLocation}
                                 zoom={13}
                                 stations={
@@ -1577,7 +1596,7 @@ export default function App() {
                                           }))
                                         : []
                                 }
-                                onStationSelect={(stationId) => {
+                                onStationSelect={(stationId: string) => {
                                     // Handle station selection
 
                                     console.log("Selected station:", stationId);
@@ -1636,37 +1655,45 @@ export default function App() {
 
                             {/* Car Selection - Always visible above charger cards */}
 
-                            <div className="absolute bottom-36 left-0 w-full z-[1000] p-4">
-                                <div className="space-y-3">
-                                    <div
-                                        className={`flex items-center gap-2 text-sm ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}
-                                    >
-                                        <Car className="w-4 h-4" />
+                            <div className="absolute bottom-40 left-4 z-[1000]">
+                                <div
+                                    className={`flex flex-col items-center justify-center w-20 h-20 rounded-lg shadow-lg border cursor-pointer transition-all duration-200 hover:scale-105 ${
+                                        isDarkMode
+                                            ? "bg-gray-800 border-gray-700 text-white hover:bg-gray-750"
+                                            : "bg-white border-gray-200 text-gray-900 hover:bg-gray-50"
+                                    }`}
+                                    onClick={() => setShowVehiclesModal(true)}
+                                >
+                                    <Car className="w-6 h-6 mb-0" />
+                                    <span className="text-xs font-medium text-center leading-tight">
+                                        {(() => {
+                                            //check user vehicles
+                                            if (userVehicles.length > 0) {
+                                                const generateCarValue = (vehicle: any) => {
+                                                    let model = vehicle.model.toLowerCase();
+                                                    model = model.replace(/ev/gi, '').trim();
+                                                    model = model.replace(/\s+/g, '-');
+                                                    return `${vehicle.company.toLowerCase()}-${model}`;
+                                                };
+                                                const selectedVehicle = userVehicles.find(vehicle => generateCarValue(vehicle) === selectedCar);
+                                                if (selectedVehicle) return `${selectedVehicle.company} ${selectedVehicle.model}`;
+                                            }
 
-                                        <span>Select Your Car</span>
-                                    </div>
-
-                                    <Select value={selectedCar} onValueChange={setSelectedCar}>
-                                        <SelectTrigger
-                                            className={`w-full px-4 py-3 border rounded-lg ${
-                                                isDarkMode
-                                                    ? "bg-gray-800 border-gray-700 text-white"
-                                                    : "bg-white border-gray-200"
-                                            }`}
-                                        >
-                                            <SelectValue placeholder="Select a car" />
-                                        </SelectTrigger>
-
-                                        <SelectContent>
-                                            {carOptions.map((car) => (
-                                                <SelectItem key={car.value} value={car.value}>
-                                                    {car.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                            // Fallback to "Car" if nothing matches
+                                            return "Car";
+                                        })()}
+                                    </span>
                                 </div>
                             </div>
+
+                            {/* My Vehicles Modal */}
+                            <MyVehiclesModal
+                                isOpen={showVehiclesModal}
+                                onClose={() => setShowVehiclesModal(false)}
+                                onSelectCar={setSelectedCar}
+                                currentSelectedCar={selectedCar}
+                                isDarkMode={isDarkMode}
+                            />
 
                             {/* Find Chargers Button - only show when chargers not found */}
 
