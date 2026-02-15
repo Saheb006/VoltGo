@@ -22,6 +22,7 @@ interface StationCardProps {
     parking?: string;
     image?: string;
     isDarkMode?: boolean;
+    onClick?: () => void;
 }
 
 export function StationCard({
@@ -35,6 +36,7 @@ export function StationCard({
     parking = "N/A",
     image = "https://via.placeholder.com/96",
     isDarkMode = false,
+    onClick,
 }: StationCardProps) {
     return (
         <div
@@ -43,6 +45,7 @@ export function StationCard({
                     ? "bg-gray-800/50 border-gray-700 hover:bg-gray-800 hover:border-gray-600"
                     : "bg-white border-gray-200 hover:shadow-lg hover:border-gray-300"
             }`}
+            onClick={onClick}
         >
             <div className="relative w-24 h-24 flex-shrink-0">
                 <img src={image} alt={name} className="w-full h-full object-cover rounded-lg" />

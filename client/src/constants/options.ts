@@ -5,14 +5,7 @@
 // Add or modify options here to customize the app's choices.
 // ============================================================================
 
-export const carOptions = [
-    { value: "tata-nexon", label: "Tata Nexon EV", chargerType: "Type 2" },
-    { value: "mg-zs", label: "MG ZS EV", chargerType: "Type 2" },
-    { value: "hyundai-kona", label: "Hyundai Kona Electric", chargerType: "Type 2" },
-    { value: "tata-tigor", label: "Tata Tigor EV", chargerType: "Type 2" },
-    { value: "mahindra-e-verito", label: "Mahindra e-Verito", chargerType: "Type 2" },
-    { value: "nissan-leaf", label: "Nissan Leaf", chargerType: "CHAdeMO" },
-];
+
 
 export const paymentOptions = [
     { value: "google-pay", label: "Google Pay", icon: "bg-blue-500" },

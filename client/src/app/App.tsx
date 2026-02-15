@@ -18,7 +18,7 @@ import {
     Filter,
     ChevronLeft,
     Key,
-    Shield,
+    Shield,  //
 } from "lucide-react";
 
 import axios from 'axios';
@@ -26,6 +26,7 @@ import axios from 'axios';
 import LoginPage from "./components/LoginPage";
 import MapComponent from "./components/Map";
 import { StationCard } from "./components/StationCard";
+import { ChargerDetailsModal } from "./components/ChargerDetailsModal";
 import { MyVehiclesModal } from "../components/MyVehiclesModal";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
@@ -70,6 +71,7 @@ import {
     updateUserProfile,
     changePassword,
     updateAvatar,
+    fetchChargerPorts,
     type UserProfile,
 } from "../services/api";
 
@@ -766,14 +768,120 @@ function ChangePasswordModal({
                             {isLoading ? "Changing..." : "Change Password"}
                         </button>
                     </DialogFooter>
-                </DialogContent>
-            </Dialog>
 
-            {/* Warning Dialog */}
-            <AlertDialog open={showWarning} onOpenChange={setShowWarning}>
-                <AlertDialogContent
-                    className={`${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}
-                >
+                {/* Message Display Area */}
+                {message && (
+                    <div
+                        className={`p-3 rounded-md text-sm ${
+                            message.type === "success"
+                                ? "bg-green-100 text-green-800 border border-green-200"
+                                : "bg-red-100 text-red-800 border border-red-200"
+                        }`}
+                    >
+                        {message.text}
+                    </div>
+                )}
+
+                <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                        <label
+                            htmlFor="currentPassword"
+                            className={`text-sm font-medium ${isDarkMode ? "text-gray-200" : "text-gray-700"}`}
+                        >
+                            Current Password
+                        </label>
+                        <input
+                            id="currentPassword"
+                            type="password"
+                            value={form.currentPassword}
+                            onChange={(e) =>
+                                handleFormChange("currentPassword", e.target.value)
+                            }
+                            className={`w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-orange-500 ${
+                                isDarkMode
+                                    ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                                    : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                            }`}
+                            placeholder="Enter your current password"
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <label
+                            htmlFor="newPassword"
+                            className={`text-sm font-medium ${isDarkMode ? "text-gray-200" : "text-gray-700"}`}
+                        >
+                            New Password
+                        </label>
+                        <input
+                            id="newPassword"
+                            type="password"
+                            value={form.newPassword}
+                            onChange={(e) => handleFormChange("newPassword", e.target.value)}
+                            className={`w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-orange-500 ${
+                                isDarkMode
+                                    ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                                    : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                            }`}
+                            placeholder="Enter your new password"
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <label
+                            htmlFor="confirmPassword"
+                            className={`text-sm font-medium ${isDarkMode ? "text-gray-200" : "text-gray-700"}`}
+                        >
+                            Confirm New Password
+                        </label>
+                        <input
+                            id="confirmPassword"
+                            type="password"
+                            value={form.confirmPassword}
+                            onChange={(e) =>
+                                handleFormChange("confirmPassword", e.target.value)
+                            }
+                            className={`w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-orange-500 ${
+                                isDarkMode
+                                    ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                                    : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                            }`}
+                            placeholder="Confirm your new password"
+                        />
+                    </div>
+                </div>
+
+                <DialogFooter>
+                    <button
+                        onClick={onClose}
+                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                            isDarkMode
+                                ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                        }`}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleChangePassword}
+                        disabled={isLoading}
+                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                            isLoading
+                                ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                                : "bg-orange-600 text-white hover:bg-orange-700"
+                        }`}
+                    >
+                        {isLoading ? "Changing..." : "Change Password"}
+                    </button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
+        {/* Warning Dialog */}
+        <AlertDialog open={showWarning} onOpenChange={setShowWarning}>
+            <AlertDialogContent
+                className={`${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}
+            >
                     <AlertDialogHeader>
                         <AlertDialogTitle
                             className={`text-xl font-semibold ${isDarkMode ? "text-white" : "text-gray-900"}`}
@@ -1185,23 +1293,47 @@ export default function App() {
 
     const [userLocationAccuracy, setUserLocationAccuracy] = useState<number | null>(null);
 
+    const [currentLocation, setCurrentLocation] = useState<[number, number] | null>(null);
+
+    const [locationUpdateInterval, setLocationUpdateInterval] = useState<NodeJS.Timeout | null>(null);
+
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     const [userProfile, setUserProfile] = useState<any>(null);
 
     const [showDeleteModal, setShowDeleteModal] = useState(false);
 
+    const [selectedCharger, setSelectedCharger] = useState<Station | null>(null);
+    const [showChargerDetails, setShowChargerDetails] = useState(false);
+    const [isLoadingPorts, setIsLoadingPorts] = useState(false);
     const [deleteForm, setDeleteForm] = useState({
         username: "",
-
         email: "",
-
         password: "",
     });
 
     const [userVehicles, setUserVehicles] = useState<any[]>([]);
 
     const searchPlaceholderRef = useRef("Search location");
+
+    // Handle station selection from the map
+    const handleStationSelect = useCallback(async (stationId: string) => {
+        const station = stations.find(s => s.id.toString() === stationId);
+        if (station) {
+            setSelectedCharger(station);
+            setIsLoadingPorts(true);
+            try {
+                const ports = await fetchChargerPorts(stationId);
+                setSelectedCharger(prev => prev ? { ...prev, connectors: ports } : null);
+            } catch (error) {
+                console.error('Error fetching charger ports:', error);
+                // Optionally show an error message to the user
+            } finally {
+                setIsLoadingPorts(false);
+            }
+            setShowChargerDetails(true);
+        }
+    }, [stations]);
 
     const searchInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -1381,64 +1513,69 @@ export default function App() {
         return () => clearInterval(interval);
     }, []);
 
+    // Frequent location updates (every 6 seconds)
+    useEffect(() => {
+        const updateLocation = () => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const { latitude, longitude, accuracy } = position.coords;
+                        const coords: [number, number] = [latitude, longitude];
+
+                        console.log(`📍 Location update: [${latitude.toFixed(6)}, ${longitude.toFixed(6)}] (±${Math.round(accuracy)}m) at ${new Date().toLocaleTimeString()}`);
+
+                        // Update both states
+                        setCurrentLocation(coords);
+                        setUserLocation(coords);
+                        setUserLocationAccuracy(accuracy);
+                    },
+                    (error) => {
+                        console.warn("Location update failed:", error.message);
+                        // Don't throw error, just log and continue
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        maximumAge: 1000, // Accept location up to 1 second old
+                        timeout: 8000 // Increased timeout to 8 seconds
+                    }
+                );
+            }
+        };
+
+        // Initial location update
+        updateLocation();
+
+        // Set up interval for updates (every 6 seconds)
+        const interval = setInterval(updateLocation, 6000);
+        setLocationUpdateInterval(interval);
+
+        // Clean up interval on unmount
+        return () => {
+            if (locationUpdateInterval) {
+                clearInterval(locationUpdateInterval);
+            }
+        };
+    }, []);
+
     // Load stations when user searches
 
     const handleFindChargers = async () => {
         setIsLoading(true);
 
         try {
-            // Get fresh location before searching
-
-            const getCurrentLocation = (): Promise<[number, number]> => {
-                return new Promise((resolve, reject) => {
-                    if (!("geolocation" in navigator)) {
-                        console.warn("Geolocation not available, using stored location");
-
-                        resolve(userLocation);
-
-                        return;
-                    }
-
-                    navigator.geolocation.getCurrentPosition(
-                        (position) => {
-                            const { latitude, longitude } = position.coords;
-
-                            console.log("📍 Current GPS location:", { latitude, longitude });
-
-                            resolve([latitude, longitude]);
-                        },
-
-                        (error) => {
-                            console.warn("Failed to get fresh location, using stored:", error);
-
-                            resolve(userLocation);
-                        },
-
-                        {
-                            enableHighAccuracy: true,
-
-                            timeout: 10000,
-
-                            maximumAge: 60000, // Accept location up to 1 minute old
-                        },
-                    );
-                });
-            };
-
-            // Get fresh location
-
-            const currentLocation = await getCurrentLocation();
+            if (!currentLocation) {
+                throw new Error("Location not available. Please wait for location update.");
+            }
 
             const userLocationObj = { lat: currentLocation[0], lng: currentLocation[1] };
 
             console.log("🔍 Searching for chargers:", {
                 distance: `${selectedDistance}km`,
-
                 location: `[${userLocationObj.lat.toFixed(6)}, ${userLocationObj.lng.toFixed(6)}]`,
-
                 radius: `${parseFloat(selectedDistance) * 1000}m`,
-
                 carType: selectedCar,
+                locationAccuracy: userLocationAccuracy ? `±${Math.round(userLocationAccuracy)}m` : "unknown",
+                searchTime: new Date().toISOString(),
             });
 
             const data = await fetchNearbyStations(selectedDistance, selectedCar, userLocationObj);
@@ -1446,12 +1583,6 @@ export default function App() {
             console.log("✅ Found stations:", data);
 
             console.log("📊 Number of stations:", data.length);
-
-            if (data.length === 0) {
-                alert(
-                    `No charging stations found within ${selectedDistance}km of your location [${userLocationObj.lat.toFixed(4)}, ${userLocationObj.lng.toFixed(4)}]. Try increasing the search radius.`,
-                );
-            }
 
             setStations(data);
 
@@ -1472,6 +1603,13 @@ export default function App() {
             setIsLoading(false);
         }
     };
+
+    // Refetch stations when distance changes
+    useEffect(() => {
+        if (showChargers && currentLocation) {
+            handleFindChargers();
+        }
+    }, [selectedDistance]);
 
     const handleLogout = async () => {
         try {
@@ -1519,14 +1657,6 @@ export default function App() {
         loadUserProfile();
     }, [isAuthenticated]);
 
-    // Reload stations when distance changes
-
-    useEffect(() => {
-        if (showChargers) {
-            handleFindChargers();
-        }
-    }, [selectedDistance]);
-
     return (
         // Show login page if not authenticated, otherwise show main app
 
@@ -1563,8 +1693,24 @@ export default function App() {
                                 </div>
                             </div>
 
-                            {/* Filter Button */}
+                            <MapComponent
+                                center={userLocation}
+                                zoom={13}
+                                stations={
+                                    showChargers
+                                        ? stations.map((station: Station) => ({
+                                              id: station.id.toString(),
+                                              position: [station.lat, station.lng] as [number, number],
+                                              name: station.name,
+                                              available: station.available,
+                                          }))
+                                        : []
+                                }
+                                onStationSelect={handleStationSelect}
+                                isDarkMode={isDarkMode}
+                            />
 
+                            {/* Filter Button */}
                             <div className="absolute top-4 left-[340px] z-[1000] animate-in fade-in slide-in-from-top-2 duration-500">
                                 <button
                                     className={`p-3 rounded-full transition-colors ${
@@ -1576,33 +1722,6 @@ export default function App() {
                                     <Filter className="w-5 h-5" />
                                 </button>
                             </div>
-
-                            <MapComponent
-                                center={userLocation}
-                                zoom={13}
-                                stations={
-                                    showChargers
-                                        ? stations.map((station: Station) => ({
-                                              id: station.id.toString(),
-
-                                              position: [station.lat, station.lng] as [
-                                                  number,
-                                                  number,
-                                              ],
-
-                                              name: station.name,
-
-                                              available: station.available,
-                                          }))
-                                        : []
-                                }
-                                onStationSelect={(stationId: string) => {
-                                    // Handle station selection
-
-                                    console.log("Selected station:", stationId);
-                                }}
-                                isDarkMode={isDarkMode}
-                            />
 
                             {/* Distance selector */}
 
@@ -1622,7 +1741,7 @@ export default function App() {
                                             <SelectValue placeholder="Select distance range" />
                                         </SelectTrigger>
 
-                                        <SelectContent>
+                                        <SelectContent className="z-[10001]">
                                             <SelectItem value="1">Nearby Stations (1km)</SelectItem>
 
                                             <SelectItem value="2">Nearby Stations (2km)</SelectItem>
@@ -1645,11 +1764,41 @@ export default function App() {
 
                             {showChargers && (
                                 <div className="absolute bottom-0 left-0 w-full z-[1000] p-4 overflow-x-auto flex space-x-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                                    {stations.map((station: Station) => (
-                                        <div key={station.id} className="flex-none w-80">
-                                            <StationCard {...station} isDarkMode={isDarkMode} />
+                                    {stations.length === 0 ? (
+                                        <div className="flex-none w-80">
+                                            <div className={`rounded-lg p-4 shadow-sm border border-red-500 transition-colors duration-300 h-32 ${
+                                                isDarkMode ? "bg-gray-800" : "bg-white"
+                                            }`}>
+                                                <div className="text-center">
+                                                    <p className="text-red-600 text-lg font-medium mb-2">
+                                                        No Charging Stations Found
+                                                    </p>
+                                                    <p className="text-red-300 text-sm">
+                                                        No charging stations found within {selectedDistance}km of {userLocationName || 'your location'}. Try increasing the search radius.
+                                                    </p>
+                                                </div>
+                                            </div>
                                         </div>
-                                    ))}
+                                    ) : (
+                                        stations.map((station: Station) => (
+                                            <div key={station.id} className="flex-none w-80">
+                                                <StationCard 
+                                                    key={station.id}
+                                                    name={station.name}
+                                                    available={station.available}
+                                                    address={station.address}
+                                                    distance={station.distance}
+                                                    time={station.time}
+                                                    chargerType={station.chargerType}
+                                                    price={station.price}
+                                                    parking={station.parking}
+                                                    image={station.image}
+                                                    isDarkMode={isDarkMode}
+                                                    onClick={() => handleStationSelect(station.id.toString())}
+                                                />
+                                            </div>
+                                        ))
+                                    )}
                                 </div>
                             )}
 
@@ -1694,6 +1843,21 @@ export default function App() {
                                 currentSelectedCar={selectedCar}
                                 isDarkMode={isDarkMode}
                             />
+
+                            {/* Charger Details Modal */}
+                            {selectedCharger && (
+                                <ChargerDetailsModal
+                                    isOpen={showChargerDetails}
+                                    onClose={() => setShowChargerDetails(false)}
+                                    isDarkMode={isDarkMode}
+                                    stationName={selectedCharger.name}
+                                    connectors={selectedCharger.connectors || []}
+                                    isLoading={isLoadingPorts}
+                                    userRole="user"
+                                    chargerId={selectedCharger.id.toString()}
+                                    selectedCar={selectedCar}
+                                />
+                            )}
 
                             {/* Find Chargers Button - only show when chargers not found */}
 

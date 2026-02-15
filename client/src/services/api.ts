@@ -568,7 +568,7 @@ export const bookCharger = async (
     carType: string,
 
     paymentMethod: string,
-): Promise<{ success: boolean; bookingId?: string }> => {
+): Promise<{ success: boolean; bookingId?: string; error?: string }> => {
     // TODO: Replace with your actual API endpoint
 
     // const response = await fetch(`${API_BASE_URL}/bookings`, {
@@ -590,4 +590,56 @@ export const bookCharger = async (
     // return response.json();
 
     return { success: true, bookingId: "BK123456" };
+};
+
+export interface Connector {
+    id: string;
+    port_number: number;
+    connector_type: string;
+    max_power_kw: number;
+    price_per_kwh: number;
+    status: 'available' | 'occupied' | 'out_of_order';
+}
+
+// Fetch charger ports from backend
+export const fetchChargerPorts = async (chargerId: string): Promise<Connector[]> => {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/v1/chargers/${chargerId}/ports`, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to fetch charger ports");
+    }
+
+    const data = await response.json();
+
+    // Handle empty or missing data
+    if (!data || !data.data) {
+        console.warn("No ports found in response:", data);
+        return [];
+    }
+
+    // Ensure data.data is an array
+    if (!Array.isArray(data.data)) {
+        console.error("Expected array but got:", typeof data.data, data.data);
+        return [];
+    }
+
+    // Map backend response to frontend Connector interface
+    return data.data.map((port: any) => ({
+        id: port._id?.toString() || port._id || port.id,
+        port_number: port.port_number || 0,
+        connector_type: port.connector_type || "AC",
+        max_power_kw: port.max_power_kw || 0,
+        price_per_kwh: port.price_per_kwh || 0,
+        status: port.status || "available",
+    }));
 };

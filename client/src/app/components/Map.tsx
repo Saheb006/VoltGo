@@ -45,21 +45,21 @@ export default function Map({
                 center,
                 zoom,
                 zoomControl: false,
+                attributionControl: false,
             });
 
             // Add tile layer (OpenStreetMap)
             L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-                attribution:
-                    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                attribution: undefined,
                 maxZoom: 19,
             }).addTo(map);
 
-            // Add zoom control
-            L.control
-                .zoom({
-                    position: "bottomright",
-                })
-                .addTo(map);
+            // Don't add zoom control
+            // L.control
+            //     .zoom({
+            //         position: "bottomright",
+            //     })
+            //     .addTo(map);
 
             mapRef.current = map;
             setMapInitialized(true);
@@ -87,8 +87,7 @@ export default function Map({
                     ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
                     : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
                 {
-                    attribution:
-                        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                    attribution: '',
                     maxZoom: 19,
                 },
             ).addTo(mapRef.current);
