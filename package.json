@@ -1,8 +1,11 @@
 {
-    "devDependencies": {
-        "prettier": "^3.8.1"
-    },
-    "scripts": {
-        "format": "prettier --write ."
-    }
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "prettier": "^3.8.1",
+    "concurrently": "^8.2.2"
+  }
 }
