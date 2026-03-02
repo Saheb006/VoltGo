@@ -3,7 +3,7 @@ import { User, Mail, Lock, Zap, Car, Battery, Camera, ChevronDown } from "lucide
 import { loginUser, registerUser } from "../../services/api";
 
 interface LoginPageProps {
-    onLoginSuccess: () => void;
+    onLoginSuccess: (user: any) => void;
     isDarkMode: boolean;
 }
 
@@ -58,14 +58,13 @@ export default function LoginPage({ onLoginSuccess, isDarkMode }: LoginPageProps
 
         try {
             if (isLogin) {
-                // Login (backend supports username OR email)
                 const result = await loginUser({
                     username: formData.username,
                     email: formData.email,
                     password: formData.password,
                 });
                 if (result.success) {
-                    onLoginSuccess();
+                    onLoginSuccess(result.user);
                 }
             } else {
                 // Register
@@ -86,14 +85,13 @@ export default function LoginPage({ onLoginSuccess, isDarkMode }: LoginPageProps
                     avatar: formData.avatar,
                 });
                 if (result.success) {
-                    // Auto-login after registration
                     const loginResult = await loginUser({
                         username: formData.username,
                         email: formData.email,
                         password: formData.password,
                     });
                     if (loginResult.success) {
-                        onLoginSuccess();
+                        onLoginSuccess(loginResult.user);
                     }
                 }
             }

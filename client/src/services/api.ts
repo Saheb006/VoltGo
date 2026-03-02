@@ -24,33 +24,9 @@
 
 // API Service Layer - Replace these with your actual backend endpoints
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:9000";
+import type { Station } from "../types";
 
-export interface Station {
-    id: number;
-
-    name: string;
-
-    address: string;
-
-    distance: string;
-
-    time: string;
-
-    chargerType: string;
-
-    price: string;
-
-    parking: string;
-
-    image: string;
-
-    available: boolean;
-
-    lat: number;
-
-    lng: number;
-}
+const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL || "http://localhost:9000";
 
 export interface UserProfile {
     name: string;
@@ -60,6 +36,8 @@ export interface UserProfile {
     initials: string;
 
     avatar?: string;
+
+    role: string;
 }
 
 // Get authentication token from cookies
@@ -237,17 +215,15 @@ export const getUserProfile = async (): Promise<UserProfile> => {
 
     return {
         name: data.data.fullName || "User",
-
         email: data.data.email || "user@example.com",
-
         initials: data.data.fullName
             ? data.data.fullName
                   .split(" ")
                   .map((n: string) => n[0]?.toUpperCase() || "")
                   .join("")
             : "U",
-
         avatar: data.data.avatar,
+        role: data.data.role || "vehicle_owner",
     };
 };
 
@@ -642,4 +618,65 @@ export const fetchChargerPorts = async (chargerId: string): Promise<Connector[]>
         price_per_kwh: port.price_per_kwh || 0,
         status: port.status || "available",
     }));
+};
+
+// Fetch user's own chargers
+export const fetchMyChargers = async (): Promise<Station[]> => {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/v1/chargers/my`, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to fetch my chargers");
+    }
+
+    const data = await response.json();
+
+    // Handle empty or missing data
+    if (!data || !data.data) {
+        console.warn("No chargers found in response:", data);
+        return [];
+    }
+
+    // Ensure data.data is an array
+    if (!Array.isArray(data.data)) {
+        console.error("Expected array but got:", typeof data.data, data.data);
+        return [];
+    }
+
+    // Map backend response to frontend Station interface
+    return data.data.map((charger: any) => {
+        // Handle MongoDB _id (could be ObjectId or string)
+        const chargerId = charger._id?.toString() || charger._id || charger.id;
+
+        // Ensure location coordinates exist
+        const coordinates = charger.location?.coordinates || [];
+
+        if (coordinates.length !== 2) {
+            console.warn("Invalid coordinates for charger:", chargerId, coordinates);
+        }
+
+        return {
+            id: chargerId,
+            name: charger.name || "Unnamed Charger",
+            address: charger.address || "Address not available",
+            distance: `${Math.round(charger.distance || 0)}m`,
+            time: `${Math.round((charger.distance || 0) / 100)}min`,
+            chargerType: charger.charger_type || "AC",
+            price: "₹12/kWh", // You can add pricing to backend later
+            parking: "+₹20 parking",
+            image: charger.image_url || "https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxFViUyMGNoYXJnaW5nJTIwc3RhdGlvbnxlbnwxfHx8fDE3Njc1OTQ3OTF8MA&ixlib=rb-4.1.0&q=80&w=400",
+            available: charger.status === "active",
+            lat: coordinates[1] || 0,
+            lng: coordinates[0] || 0,
+        };
+    });
 };

@@ -28,6 +28,7 @@ import MapComponent from "./components/Map";
 import { StationCard } from "./components/StationCard";
 import { ChargerDetailsModal } from "./components/ChargerDetailsModal";
 import { MyVehiclesModal } from "../components/MyVehiclesModal";
+import { MyChargersModal } from "./components/MyChargersModal";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 
@@ -1295,11 +1296,13 @@ export default function App() {
 
     const [currentLocation, setCurrentLocation] = useState<[number, number] | null>(null);
 
-    const [locationUpdateInterval, setLocationUpdateInterval] = useState<NodeJS.Timeout | null>(null);
+    const [locationUpdateInterval, setLocationUpdateInterval] = useState<number | null>(null);
 
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     const [userProfile, setUserProfile] = useState<any>(null);
+
+    const [userRole, setUserRole] = useState<string>("vehicle_owner");
 
     const [showDeleteModal, setShowDeleteModal] = useState(false);
 
@@ -1314,7 +1317,15 @@ export default function App() {
 
     const [userVehicles, setUserVehicles] = useState<any[]>([]);
 
-    const searchPlaceholderRef = useRef("Search location");
+    const [userChargers, setUserChargers] = useState<Station[]>([]);
+
+    const [showMyChargersModal, setShowMyChargersModal] = useState(false);
+
+    const [searchPlaceholder, setSearchPlaceholder] = useState("Search location");
+
+    const searchInputRef = useRef<HTMLInputElement | null>(null);
+
+    const hasReceivedLocationRef = useRef(false);
 
     // Handle station selection from the map
     const handleStationSelect = useCallback(async (stationId: string) => {
@@ -1334,10 +1345,6 @@ export default function App() {
             setShowChargerDetails(true);
         }
     }, [stations]);
-
-    const searchInputRef = useRef<HTMLInputElement | null>(null);
-
-    const hasReceivedLocationRef = useRef(false);
 
     // Request location permission and get user location on mount
 
@@ -1503,7 +1510,7 @@ export default function App() {
         const interval = setInterval(() => {
             index = (index + 1) % placeholders.length;
 
-            searchPlaceholderRef.current = placeholders[index];
+            setSearchPlaceholder(placeholders[index]);
 
             if (searchInputRef.current) {
                 searchInputRef.current.placeholder = placeholders[index];
@@ -1647,6 +1654,10 @@ export default function App() {
 
                     setUserProfile(profile);
 
+                    if (profile.role) {
+                        setUserRole(profile.role);
+                    }
+
                     await fetchUserVehicles();
                 } catch (error) {
                     console.error("Failed to load user profile:", error);
@@ -1661,7 +1672,15 @@ export default function App() {
         // Show login page if not authenticated, otherwise show main app
 
         !isAuthenticated ? (
-            <LoginPage onLoginSuccess={() => setIsAuthenticated(true)} isDarkMode={isDarkMode} />
+            <LoginPage 
+                onLoginSuccess={(user: any) => {
+                    setIsAuthenticated(true);
+                    if (user && user.role) {
+                        setUserRole(user.role);
+                    }
+                }} 
+                isDarkMode={isDarkMode} 
+            />
         ) : (
             <div
                 className={`min-h-screen pb-16 transition-colors duration-300 ${isDarkMode ? "bg-gray-900" : "bg-gray-50"}`}
@@ -1683,7 +1702,7 @@ export default function App() {
                                     <input
                                         ref={searchInputRef}
                                         type="text"
-                                        placeholder={searchPlaceholderRef.current}
+                                        placeholder={searchPlaceholder}
                                         className={`w-full pl-12 pr-4 py-3 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
                                             isDarkMode
                                                 ? "bg-gray-800/90 border-gray-700 text-white placeholder-gray-400 backdrop-blur-sm"
@@ -1760,9 +1779,8 @@ export default function App() {
                                 </div>
                             )}
 
-                            {/* Station List - Horizontal Scroll */}
-
-                            {showChargers && (
+                            {/* Station List - Horizontal Scroll - Only for vehicle owners */}
+                            {userRole === 'vehicle_owner' && showChargers && (
                                 <div className="absolute bottom-0 left-0 w-full z-[1000] p-4 overflow-x-auto flex space-x-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
                                     {stations.length === 0 ? (
                                         <div className="flex-none w-80">
@@ -1802,38 +1820,57 @@ export default function App() {
                                 </div>
                             )}
 
-                            {/* Car Selection - Always visible above charger cards */}
+                            {/* Car/Charger Selection - Role based */}
+                            {userRole === 'vehicle_owner' && (
+                                <div className="absolute bottom-40 left-4 z-[1000]">
+                                    <div
+                                        className={`flex flex-col items-center justify-center w-20 h-20 rounded-lg shadow-lg border cursor-pointer transition-all duration-200 hover:scale-105 ${
+                                            isDarkMode
+                                                ? "bg-gray-800 border-gray-700 text-white hover:bg-gray-750"
+                                                : "bg-white border-gray-200 text-gray-900 hover:bg-gray-50"
+                                        }`}
+                                        onClick={() => setShowVehiclesModal(true)}
+                                    >
+                                        <Car className="w-6 h-6 mb-0" />
+                                        <span className="text-xs font-medium text-center leading-tight">
+                                            {(() => {
+                                                //check user vehicles
+                                                if (userVehicles.length > 0) {
+                                                    const generateCarValue = (vehicle: any) => {
+                                                        let model = vehicle.model.toLowerCase();
+                                                        model = model.replace(/ev/gi, '').trim();
+                                                        model = model.replace(/\s+/g, '-');
+                                                        return `${vehicle.company.toLowerCase()}-${model}`;
+                                                    };
+                                                    const selectedVehicle = userVehicles.find(vehicle => generateCarValue(vehicle) === selectedCar);
+                                                    if (selectedVehicle) return `${selectedVehicle.company} ${selectedVehicle.model}`;
+                                                }
 
-                            <div className="absolute bottom-40 left-4 z-[1000]">
-                                <div
-                                    className={`flex flex-col items-center justify-center w-20 h-20 rounded-lg shadow-lg border cursor-pointer transition-all duration-200 hover:scale-105 ${
-                                        isDarkMode
-                                            ? "bg-gray-800 border-gray-700 text-white hover:bg-gray-750"
-                                            : "bg-white border-gray-200 text-gray-900 hover:bg-gray-50"
-                                    }`}
-                                    onClick={() => setShowVehiclesModal(true)}
-                                >
-                                    <Car className="w-6 h-6 mb-0" />
-                                    <span className="text-xs font-medium text-center leading-tight">
-                                        {(() => {
-                                            //check user vehicles
-                                            if (userVehicles.length > 0) {
-                                                const generateCarValue = (vehicle: any) => {
-                                                    let model = vehicle.model.toLowerCase();
-                                                    model = model.replace(/ev/gi, '').trim();
-                                                    model = model.replace(/\s+/g, '-');
-                                                    return `${vehicle.company.toLowerCase()}-${model}`;
-                                                };
-                                                const selectedVehicle = userVehicles.find(vehicle => generateCarValue(vehicle) === selectedCar);
-                                                if (selectedVehicle) return `${selectedVehicle.company} ${selectedVehicle.model}`;
-                                            }
-
-                                            // Fallback to "Car" if nothing matches
-                                            return "Car";
-                                        })()}
-                                    </span>
+                                                // Fallback to "Car" if nothing matches
+                                                return "Car";
+                                            })()}
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
+
+                            {userRole === 'charger_owner' && (
+                                <div className="absolute bottom-40 left-4 z-[1000]">
+                                    <div
+                                        className={`flex flex-col items-center justify-center w-20 h-20 rounded-lg shadow-lg border cursor-pointer transition-all duration-200 hover:scale-105 ${
+                                            isDarkMode
+                                                ? "bg-gray-800 border-gray-700 text-white hover:bg-gray-750"
+                                                : "bg-white border-gray-200 text-gray-900 hover:bg-gray-50"
+                                        }`}
+                                        onClick={() => setShowMyChargersModal(true)}
+                                    >
+                                        <ZapIcon className="w-6 h-6 mb-0" />
+                                        <span className="text-xs font-medium text-center leading-tight">
+                                            Chargers
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* My Vehicles Modal */}
                             <MyVehiclesModal
@@ -1841,6 +1878,13 @@ export default function App() {
                                 onClose={() => setShowVehiclesModal(false)}
                                 onSelectCar={setSelectedCar}
                                 currentSelectedCar={selectedCar}
+                                isDarkMode={isDarkMode}
+                            />
+
+                            {/* My Chargers Modal */}
+                            <MyChargersModal
+                                isOpen={showMyChargersModal}
+                                onClose={() => setShowMyChargersModal(false)}
                                 isDarkMode={isDarkMode}
                             />
 
@@ -1859,9 +1903,8 @@ export default function App() {
                                 />
                             )}
 
-                            {/* Find Chargers Button - only show when chargers not found */}
-
-                            {!showChargers && (
+                            {/* Find Chargers Button - only show when chargers not found - Only for vehicle owners */}
+                            {userRole === 'vehicle_owner' && !showChargers && (
                                 <div className="absolute bottom-4 left-4 right-4 z-[1000] space-y-2">
                                     {/* Location indicator */}
 

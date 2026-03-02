@@ -22,3 +22,14 @@ export const distanceOptions = [
     { value: "5", label: "Within 5km" },
     { value: "10", label: "Within 10km" },
 ];
+
+export const connectorColors: Record<string, string> = {
+    'Type 1': 'text-blue-400',
+    'Type 2': 'text-green-400',
+    'CCS1': 'text-red-400',
+    'CCS2': 'text-purple-400',
+    'CHAdeMO': 'text-yellow-400',
+    'GB/T': 'text-orange-400',
+    'Tesla': 'text-cyan-400',
+    'default': 'text-gray-400',
+};

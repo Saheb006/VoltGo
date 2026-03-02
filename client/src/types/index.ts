@@ -16,7 +16,7 @@ export interface Connector {
 }
 
 export interface Station {
-    id: number;
+    id: string;
     name: string;
     address: string;
     distance: string;
