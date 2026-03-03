@@ -680,3 +680,141 @@ export const fetchMyChargers = async (): Promise<Station[]> => {
         };
     });
 };
+
+// Create a new charger
+export const createCharger = async (chargerData: {
+    name: string;
+    address: string;
+    address_details?: string;
+    latitude: number;
+    longitude: number;
+    charger_type: "AC" | "DC";
+    status?: "active" | "inactive" | "maintenance";
+    image: File;
+}): Promise<{ success: boolean; charger?: Station }> => {
+    const token = getAuthToken();
+
+    const formData = new FormData();
+    formData.append("name", chargerData.name);
+    formData.append("address", chargerData.address);
+    if (chargerData.address_details) {
+        formData.append("address_details", chargerData.address_details);
+    }
+    formData.append("latitude", chargerData.latitude.toString());
+    formData.append("longitude", chargerData.longitude.toString());
+    formData.append("charger_type", chargerData.charger_type);
+    if (chargerData.status) {
+        formData.append("status", chargerData.status);
+    }
+    formData.append("image", chargerData.image);
+
+    const response = await fetch(`${API_BASE_URL}/api/v1/chargers`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: formData,
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to create charger");
+    }
+
+    const data = await response.json();
+
+    return {
+        success: true,
+        charger: {
+            id: data.data._id?.toString() || data.data._id || data.data.id,
+            name: data.data.name,
+            address: data.data.address,
+            distance: "0m",
+            time: "0min",
+            chargerType: data.data.charger_type,
+            price: "₹12/kWh",
+            parking: "+₹20 parking",
+            image: data.data.image_url || "https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxFViUyMGNoYXJnaW5nJTIwc3RhdGlvbnxlbnwxfHx8fDE3Njc1OTQ3OTF8MA&ixlib=rb-4.1.0&q=80&w=400",
+            available: data.data.status === "active",
+            lat: data.data.location?.coordinates?.[1] || 0,
+            lng: data.data.location?.coordinates?.[0] || 0,
+        },
+    };
+};
+
+// Create a new charger port
+export const createChargerPort = async (
+    chargerId: string,
+    portData: {
+        connector_type: string;
+        max_power_kw: number;
+        price_per_kwh: number;
+        status?: string;
+    },
+): Promise<Connector> => {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/v1/chargers/${chargerId}/ports`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(portData),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to create charger port");
+    }
+
+    const data = await response.json();
+
+    // Map to Connector interface
+    return {
+        id: data.data._id?.toString() || data.data._id || data.data.id,
+        port_number: data.data.port_number || 0,
+        connector_type: data.data.connector_type || "AC",
+        max_power_kw: data.data.max_power_kw || 0,
+        price_per_kwh: data.data.price_per_kwh || 0,
+        status: data.data.status || "available",
+    };
+};
+
+// Update port status
+export const updatePortStatus = async (
+    chargerId: string,
+    portId: string,
+    status: string,
+): Promise<Connector> => {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/v1/chargers/${chargerId}/ports/${portId}/status`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ status }),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to update port status");
+    }
+
+    const data = await response.json();
+
+    // Map to Connector interface
+    return {
+        id: data.data._id?.toString() || data.data._id || data.data.id,
+        port_number: data.data.port_number || 0,
+        connector_type: data.data.connector_type || "AC",
+        max_power_kw: data.data.max_power_kw || 0,
+        price_per_kwh: data.data.price_per_kwh || 0,
+        status: data.data.status || "available",
+    };
+};
