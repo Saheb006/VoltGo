@@ -16,7 +16,8 @@ import {
     Filter,
     ChevronLeft,
     Key,
-    Shield,  //
+    Shield,
+    Info,  //
 } from "lucide-react";
 
 import axios from 'axios';
@@ -28,6 +29,9 @@ import { ChargerDetailsModal } from "./components/ChargerDetailsModal";
 import { MyVehiclesModal } from "../components/MyVehiclesModal";
 import { MyChargersModal } from "./components/MyChargersModal";
 import SubscriptionPage from "./SubscriptionPage";
+import AboutPage from "./AboutPage";
+import PrivacyPolicyPage from "./PrivacyPolicyPage";
+import TermsAndConditionsPage from "./TermsAndConditionsPage";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 
@@ -1124,7 +1128,7 @@ export default function App() {
 
     const [showChargers, setShowChargers] = useState(false);
 
-    const [currentPage, setCurrentPage] = useState<"home" | "account" | "edit-profile" | "subscription">("home");
+    const [currentPage, setCurrentPage] = useState<"home" | "account" | "edit-profile" | "subscription" | "about" | "privacy-policy" | "terms">("home");
 
     const [isDarkMode, setIsDarkMode] = useState(false);
 
@@ -1822,6 +1826,21 @@ export default function App() {
                         isDarkMode={isDarkMode}
                         setCurrentPage={setCurrentPage}
                     />
+                ) : currentPage === "about" ? (
+                    <AboutPage
+                        isDarkMode={isDarkMode}
+                        setCurrentPage={setCurrentPage}
+                    />
+                ) : currentPage === "privacy-policy" ? (
+                    <PrivacyPolicyPage
+                        isDarkMode={isDarkMode}
+                        setCurrentPage={setCurrentPage}
+                    />
+                ) : currentPage === "terms" ? (
+                    <TermsAndConditionsPage
+                        isDarkMode={isDarkMode}
+                        setCurrentPage={setCurrentPage}
+                    />
                 ) : null}
 
                 {/* Bottom Navigation - Fixed at bottom like Uber */}
@@ -1926,7 +1945,7 @@ function AccountPage({
 
     setDeleteForm: (form: { username: string; email: string; password: string }) => void;
 
-    setCurrentPage: (page: "home" | "account" | "edit-profile" | "subscription") => void;
+    setCurrentPage: (page: "home" | "account" | "edit-profile" | "subscription" | "about") => void;
     userRole: string;
 }): React.JSX.Element {
     return (
@@ -2135,6 +2154,31 @@ function AccountPage({
 
                     <ChevronRight
                         className={`w-5 h-5 ${isDarkMode ? "text-gray-500 group-hover:text-red-400" : "text-gray-400 group-hover:text-red-400"}`}
+                    />
+                </button>
+
+                <button
+                    onClick={() => setCurrentPage("about")}
+                    className={`w-full rounded-lg p-4 shadow-sm border transition-colors flex items-center justify-between group ${
+                        isDarkMode
+                            ? "bg-gray-800 border-gray-700 hover:bg-gray-750"
+                            : "bg-white border-gray-200 hover:bg-gray-50"
+                    }`}
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-cyan-100 flex items-center justify-center">
+                            <Info className="w-5 h-5 text-cyan-600" />
+                        </div>
+
+                        <span
+                            className={`font-medium ${isDarkMode ? "text-white" : "text-gray-900"}`}
+                        >
+                            About Us
+                        </span>
+                    </div>
+
+                    <ChevronRight
+                        className={`w-5 h-5 ${isDarkMode ? "text-gray-500 group-hover:text-gray-400" : "text-gray-400 group-hover:text-gray-600"}`}
                     />
                 </button>
 
