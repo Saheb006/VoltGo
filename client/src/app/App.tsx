@@ -2,8 +2,6 @@ import {
     Search,
     MapPin,
     Car,
-    CreditCard,
-    ChevronDown,
     User,
     Clock as ClockIcon,
     Home,
@@ -29,6 +27,7 @@ import { StationCard } from "./components/StationCard";
 import { ChargerDetailsModal } from "./components/ChargerDetailsModal";
 import { MyVehiclesModal } from "../components/MyVehiclesModal";
 import { MyChargersModal } from "./components/MyChargersModal";
+import SubscriptionPage from "./SubscriptionPage";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 
@@ -49,20 +48,8 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from "./components/ui/dialog";
 
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-} from "./components/ui/alert-dialog";
 
 import {
     fetchNearbyStations,
@@ -163,7 +150,7 @@ function UpdateAccountModal({
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent
-                className={`sm:max-w-md ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}
+                className={`fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 sm:max-w-md z-[10030] rounded-lg border shadow-lg ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}
             >
                 <DialogHeader>
                     <DialogTitle
@@ -427,7 +414,7 @@ function DeleteAccountModal({
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent
-                className={`sm:max-w-md ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}
+                className={`fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 sm:max-w-md z-[10030] rounded-lg border shadow-lg ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}
             >
                 <DialogHeader>
                     <DialogTitle
@@ -568,7 +555,7 @@ function ChangePasswordModal({
     const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(
         null,
     );
-    const [showWarning, setShowWarning] = useState(false);
+    const [showConfirmation, setShowConfirmation] = useState(false);
     const [form, setForm] = useState({
         currentPassword: "",
         newPassword: "",
@@ -603,7 +590,7 @@ function ChangePasswordModal({
             }
 
             // Show warning dialog before proceeding
-            setShowWarning(true);
+            setShowConfirmation(true);
         } catch (error) {
             console.error("Change password validation error:", error);
             setMessage({
@@ -616,7 +603,6 @@ function ChangePasswordModal({
     const confirmChangePassword = async () => {
         try {
             setIsLoading(true);
-            setShowWarning(false);
 
             const result = await changePassword(form.currentPassword, form.newPassword);
 
@@ -649,23 +635,23 @@ function ChangePasswordModal({
         <>
             <Dialog open={isOpen} onOpenChange={onClose}>
                 <DialogContent
-                    className={`sm:max-w-md ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}
+                    className={`fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 sm:max-w-md z-[10030] rounded-lg border shadow-lg ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}
                 >
                     <DialogHeader>
                         <DialogTitle
                             className={`text-xl font-semibold ${isDarkMode ? "text-white" : "text-gray-900"}`}
                         >
-                            Change Password
+                            {showConfirmation ? "Are you sure?" : "Change Password"}
                         </DialogTitle>
                         <DialogDescription
                             className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}
                         >
-                            Enter your current password and choose a new password.
+                            {showConfirmation ? "Changing your password will require you to login again on all devices. Are you sure you want to continue?" : "Enter your current password and choose a new password."}
                         </DialogDescription>
                     </DialogHeader>
 
                     {/* Message Display Area */}
-                    {message && (
+                    {!showConfirmation && message && (
                         <div
                             className={`p-3 rounded-md text-sm ${
                                 message.type === "success"
@@ -677,78 +663,80 @@ function ChangePasswordModal({
                         </div>
                     )}
 
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <label
-                                htmlFor="currentPassword"
-                                className={`text-sm font-medium ${isDarkMode ? "text-gray-200" : "text-gray-700"}`}
-                            >
-                                Current Password
-                            </label>
-                            <input
-                                id="currentPassword"
-                                type="password"
-                                value={form.currentPassword}
-                                onChange={(e) =>
-                                    handleFormChange("currentPassword", e.target.value)
-                                }
-                                className={`w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-orange-500 ${
-                                    isDarkMode
-                                        ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                                        : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
-                                }`}
-                                placeholder="Enter your current password"
-                            />
-                        </div>
+                    {!showConfirmation && (
+                        <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <label
+                                    htmlFor="currentPassword"
+                                    className={`text-sm font-medium ${isDarkMode ? "text-gray-200" : "text-gray-700"}`}
+                                >
+                                    Current Password
+                                </label>
+                                <input
+                                    id="currentPassword"
+                                    type="password"
+                                    value={form.currentPassword}
+                                    onChange={(e) =>
+                                        handleFormChange("currentPassword", e.target.value)
+                                    }
+                                    className={`w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-orange-500 ${
+                                        isDarkMode
+                                            ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                                            : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                                    }`}
+                                    placeholder="Enter your current password"
+                                />
+                            </div>
 
-                        <div className="space-y-2">
-                            <label
-                                htmlFor="newPassword"
-                                className={`text-sm font-medium ${isDarkMode ? "text-gray-200" : "text-gray-700"}`}
-                            >
-                                New Password
-                            </label>
-                            <input
-                                id="newPassword"
-                                type="password"
-                                value={form.newPassword}
-                                onChange={(e) => handleFormChange("newPassword", e.target.value)}
-                                className={`w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-orange-500 ${
-                                    isDarkMode
-                                        ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                                        : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
-                                }`}
-                                placeholder="Enter your new password"
-                            />
-                        </div>
+                            <div className="space-y-2">
+                                <label
+                                    htmlFor="newPassword"
+                                    className={`text-sm font-medium ${isDarkMode ? "text-gray-200" : "text-gray-700"}`}
+                                >
+                                    New Password
+                                </label>
+                                <input
+                                    id="newPassword"
+                                    type="password"
+                                    value={form.newPassword}
+                                    onChange={(e) => handleFormChange("newPassword", e.target.value)}
+                                    className={`w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-orange-500 ${
+                                        isDarkMode
+                                            ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                                            : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                                    }`}
+                                    placeholder="Enter your new password"
+                                />
+                            </div>
 
-                        <div className="space-y-2">
-                            <label
-                                htmlFor="confirmPassword"
-                                className={`text-sm font-medium ${isDarkMode ? "text-gray-200" : "text-gray-700"}`}
-                            >
-                                Confirm New Password
-                            </label>
-                            <input
-                                id="confirmPassword"
-                                type="password"
-                                value={form.confirmPassword}
-                                onChange={(e) =>
-                                    handleFormChange("confirmPassword", e.target.value)
-                                }
-                                className={`w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-orange-500 ${
-                                    isDarkMode
-                                        ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                                        : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
-                                }`}
-                                placeholder="Confirm your new password"
-                            />
+                            <div className="space-y-2">
+                                <label
+                                    htmlFor="confirmPassword"
+                                    className={`text-sm font-medium ${isDarkMode ? "text-gray-200" : "text-gray-700"}`}
+                                >
+                                    Confirm New Password
+                                </label>
+                                <input
+                                    id="confirmPassword"
+                                    type="password"
+                                    value={form.confirmPassword}
+                                    onChange={(e) =>
+                                        handleFormChange("confirmPassword", e.target.value)
+                                    }
+                                    className={`w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-orange-500 ${
+                                        isDarkMode
+                                            ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                                            : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                                    }`}
+                                    placeholder="Confirm your new password"
+                                />
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     <DialogFooter>
                         <button
-                            onClick={onClose}
+                            onClick={showConfirmation ? () => setShowConfirmation(false) : onClose}
                             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                                 isDarkMode
                                     ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
@@ -758,7 +746,7 @@ function ChangePasswordModal({
                             Cancel
                         </button>
                         <button
-                            onClick={handleChangePassword}
+                            onClick={showConfirmation ? confirmChangePassword : handleChangePassword}
                             disabled={isLoading}
                             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                                 isLoading
@@ -766,155 +754,13 @@ function ChangePasswordModal({
                                     : "bg-orange-600 text-white hover:bg-orange-700"
                             }`}
                         >
-                            {isLoading ? "Changing..." : "Change Password"}
+                            {showConfirmation ? "Yes, Change Password" : (isLoading ? "Changing..." : "Change Password")}
                         </button>
                     </DialogFooter>
 
-                {/* Message Display Area */}
-                {message && (
-                    <div
-                        className={`p-3 rounded-md text-sm ${
-                            message.type === "success"
-                                ? "bg-green-100 text-green-800 border border-green-200"
-                                : "bg-red-100 text-red-800 border border-red-200"
-                        }`}
-                    >
-                        {message.text}
-                    </div>
-                )}
-
-                <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                        <label
-                            htmlFor="currentPassword"
-                            className={`text-sm font-medium ${isDarkMode ? "text-gray-200" : "text-gray-700"}`}
-                        >
-                            Current Password
-                        </label>
-                        <input
-                            id="currentPassword"
-                            type="password"
-                            value={form.currentPassword}
-                            onChange={(e) =>
-                                handleFormChange("currentPassword", e.target.value)
-                            }
-                            className={`w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-orange-500 ${
-                                isDarkMode
-                                    ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                                    : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
-                            }`}
-                            placeholder="Enter your current password"
-                        />
-                    </div>
-
-                    <div className="space-y-2">
-                        <label
-                            htmlFor="newPassword"
-                            className={`text-sm font-medium ${isDarkMode ? "text-gray-200" : "text-gray-700"}`}
-                        >
-                            New Password
-                        </label>
-                        <input
-                            id="newPassword"
-                            type="password"
-                            value={form.newPassword}
-                            onChange={(e) => handleFormChange("newPassword", e.target.value)}
-                            className={`w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-orange-500 ${
-                                isDarkMode
-                                    ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                                    : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
-                            }`}
-                            placeholder="Enter your new password"
-                        />
-                    </div>
-
-                    <div className="space-y-2">
-                        <label
-                            htmlFor="confirmPassword"
-                            className={`text-sm font-medium ${isDarkMode ? "text-gray-200" : "text-gray-700"}`}
-                        >
-                            Confirm New Password
-                        </label>
-                        <input
-                            id="confirmPassword"
-                            type="password"
-                            value={form.confirmPassword}
-                            onChange={(e) =>
-                                handleFormChange("confirmPassword", e.target.value)
-                            }
-                            className={`w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-orange-500 ${
-                                isDarkMode
-                                    ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                                    : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
-                            }`}
-                            placeholder="Confirm your new password"
-                        />
-                    </div>
-                </div>
-
-                <DialogFooter>
-                    <button
-                        onClick={onClose}
-                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                            isDarkMode
-                                ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                        }`}
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        onClick={handleChangePassword}
-                        disabled={isLoading}
-                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                            isLoading
-                                ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                                : "bg-orange-600 text-white hover:bg-orange-700"
-                        }`}
-                    >
-                        {isLoading ? "Changing..." : "Change Password"}
-                    </button>
-                </DialogFooter>
             </DialogContent>
         </Dialog>
 
-        {/* Warning Dialog */}
-        <AlertDialog open={showWarning} onOpenChange={setShowWarning}>
-            <AlertDialogContent
-                className={`${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}
-            >
-                    <AlertDialogHeader>
-                        <AlertDialogTitle
-                            className={`text-xl font-semibold ${isDarkMode ? "text-white" : "text-gray-900"}`}
-                        >
-                            Are you sure?
-                        </AlertDialogTitle>
-                        <AlertDialogDescription
-                            className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}
-                        >
-                            Changing your password will require you to login again on all devices.
-                            Are you sure you want to continue?
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel
-                            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                                isDarkMode
-                                    ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                            }`}
-                        >
-                            Cancel
-                        </AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={confirmChangePassword}
-                            className="bg-orange-600 text-white hover:bg-orange-700"
-                        >
-                            Yes, Change Password
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
         </>
     );
 }
@@ -1172,7 +1018,7 @@ function EditProfilePage({
                 onOpenChange={() => setShowUpdateAvatarModal(false)}
             >
                 <DialogContent
-                    className={`sm:max-w-md ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}
+                    className={`fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 sm:max-w-md z-[10030] rounded-lg border shadow-lg ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}
                 >
                     <DialogHeader>
                         <DialogTitle
@@ -1278,7 +1124,7 @@ export default function App() {
 
     const [showChargers, setShowChargers] = useState(false);
 
-    const [currentPage, setCurrentPage] = useState<"home" | "account" | "edit-profile">("home");
+    const [currentPage, setCurrentPage] = useState<"home" | "account" | "edit-profile" | "subscription">("home");
 
     const [isDarkMode, setIsDarkMode] = useState(false);
 
@@ -1962,6 +1808,7 @@ export default function App() {
                         deleteForm={deleteForm}
                         setDeleteForm={setDeleteForm}
                         setCurrentPage={setCurrentPage}
+                        userRole={userRole}
                     />
                 ) : currentPage === "edit-profile" ? (
                     <EditProfilePage
@@ -1969,6 +1816,11 @@ export default function App() {
                         setCurrentPage={setCurrentPage}
                         setUserProfile={setUserProfile}
                         userProfile={userProfile}
+                    />
+                ) : currentPage === "subscription" ? (
+                    <SubscriptionPage
+                        isDarkMode={isDarkMode}
+                        setCurrentPage={setCurrentPage}
                     />
                 ) : null}
 
@@ -2056,6 +1908,7 @@ function AccountPage({
     setDeleteForm,
 
     setCurrentPage,
+    userRole,
 }: {
     isDarkMode: boolean;
 
@@ -2073,7 +1926,8 @@ function AccountPage({
 
     setDeleteForm: (form: { username: string; email: string; password: string }) => void;
 
-    setCurrentPage: (page: "home" | "account" | "edit-profile") => void;
+    setCurrentPage: (page: "home" | "account" | "edit-profile" | "subscription") => void;
+    userRole: string;
 }): React.JSX.Element {
     return (
         <div className="max-w-2xl mx-auto px-6 py-6 space-y-6">
@@ -2211,6 +2065,33 @@ function AccountPage({
                         className={`w-5 h-5 ${isDarkMode ? "text-gray-500 group-hover:text-gray-400" : "text-gray-400 group-hover:text-gray-600"}`}
                     />
                 </button>
+
+                {userRole === 'charger_owner' && (
+                    <button
+                        onClick={() => setCurrentPage("subscription")}
+                        className={`w-full rounded-lg p-4 shadow-sm border transition-colors flex items-center justify-between group ${
+                            isDarkMode
+                                ? "bg-gray-800 border-gray-700 hover:bg-gray-750"
+                                : "bg-white border-gray-200 hover:bg-gray-50"
+                        }`}
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                <ZapIcon className="w-5 h-5 text-blue-600" />
+                            </div>
+
+                            <span
+                                className={`font-medium ${isDarkMode ? "text-white" : "text-gray-900"}`}
+                            >
+                                Charger Subscription
+                            </span>
+                        </div>
+
+                        <ChevronRight
+                            className={`w-5 h-5 ${isDarkMode ? "text-gray-500 group-hover:text-gray-400" : "text-gray-400 group-hover:text-gray-600"}`}
+                        />
+                    </button>
+                )}
 
                 <button
                     className={`w-full rounded-lg p-4 shadow-sm border transition-colors flex items-center justify-between group ${

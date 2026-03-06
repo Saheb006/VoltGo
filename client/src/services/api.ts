@@ -818,3 +818,146 @@ export const updatePortStatus = async (
         status: data.data.status || "available",
     };
 };
+
+// Delete a charger
+export const deleteCharger = async (chargerId: string): Promise<{ success: boolean }> => {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/v1/chargers/${chargerId}`, {
+        method: "DELETE",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to delete charger");
+    }
+
+    const data = await response.json();
+
+    return {
+        success: data.success,
+    };
+};
+
+// Delete a charger port
+export const deleteChargerPort = async (chargerId: string, portId: string): Promise<{ success: boolean }> => {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/v1/chargers/${chargerId}/ports/${portId}`, {
+        method: "DELETE",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to delete charger port");
+    }
+
+    const data = await response.json();
+
+    return {
+        success: data.success,
+    };
+};
+
+// Subscription APIs
+export const getSubscriptionPlans = async (): Promise<any[]> => {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/v1/subscriptions/plans`, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to get subscription plans");
+    }
+
+    const data = await response.json();
+
+    return data.data || [];
+};
+
+export const startSubscription = async (planId: string): Promise<{ success: boolean; subscription?: any }> => {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/v1/subscriptions/start`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ planId }),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to start subscription");
+    }
+
+    const data = await response.json();
+
+    return {
+        success: data.success,
+        subscription: data.data,
+    };
+};
+
+export const getMySubscription = async (): Promise<any> => {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/v1/subscriptions/me`, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to get my subscription");
+    }
+
+    const data = await response.json();
+
+    return data.data;
+};
+
+export const listMySubscriptions = async (): Promise<any[]> => {
+    const token = getAuthToken();
+
+    const response = await fetch(`${API_BASE_URL}/api/v1/subscriptions/history`, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to get subscription history");
+    }
+
+    const data = await response.json();
+
+    return data.data || [];
+};

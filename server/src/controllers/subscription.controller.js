@@ -88,4 +88,14 @@ const listMySubscriptions = asyncHandler(async (req, res) => {
         );
 });
 
-export { startSubscription, getMySubscription, listMySubscriptions };
+const getSubscriptionPlans = asyncHandler(async (req, res) => {
+    const plans = await SubscriptionPlan.find({
+        is_active: true,
+    }).sort({ createdAt: 1 });
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, plans, "Subscription plans retrieved"));
+});
+
+export { startSubscription, getMySubscription, listMySubscriptions, getSubscriptionPlans };

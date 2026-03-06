@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Zap, X, Plug, Car } from "lucide-react";
+import { Zap, X, Plug, Car, MoreVertical } from "lucide-react";
 import {
     Dialog,
     DialogContent,
     DialogTitle,
     DialogDescription,
 } from "./ui/dialog";
-import { fetchMyChargers, fetchChargerPorts, createCharger, reverseGeocode, updatePortStatus } from "../../services/api";
+import { fetchMyChargers, fetchChargerPorts, createCharger, reverseGeocode, updatePortStatus, deleteCharger, deleteChargerPort } from "../../services/api";
 import type { Station, ConnectorBackend } from "../../types";
 import { AddChargerForm } from "./AddChargerForm";
 import { AddPortForm } from "./AddPortForm";
@@ -33,6 +33,13 @@ export function MyChargersModal({
     const [selectedChargerId, setSelectedChargerId] = useState<string>("");
     const [selectedChargerName, setSelectedChargerName] = useState<string>("");
     const [editingPortId, setEditingPortId] = useState<string | null>(null);
+    const [menuOpenFor, setMenuOpenFor] = useState<string | null>(null);
+    const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+    const [chargerToDelete, setChargerToDelete] = useState<Station | null>(null);
+    const [showDeletionResult, setShowDeletionResult] = useState(false);
+    const [deletionSuccess, setDeletionSuccess] = useState(false);
+    const [deletionMessage, setDeletionMessage] = useState("");
+    const [menuOpenForPort, setMenuOpenForPort] = useState<string | null>(null);
 
     const getChargerIcon = (_chargerType: string) => {
         return <Zap className="w-3 h-3 text-yellow-500 inline mr-1" />;
@@ -161,16 +168,31 @@ export function MyChargersModal({
         onClose(); // Close the modal
     };
 
-    const handleDeletePort = (chargerId: string) => {
-        console.log("Delete port for charger:", chargerId);
-        // TODO: Implement delete port functionality
+    const handleDeleteCharger = (chargerId: string) => {
+        const charger = chargers.find(c => c.id === chargerId);
+        setChargerToDelete(charger || null);
+        setShowDeleteConfirmation(true);
+    };
+
+    const handleDeletePort = async (chargerId: string, portId: string) => {
+        try {
+            await deleteChargerPort(chargerId, portId);
+            fetchUserChargers(); // Refresh list
+        } catch (error) {
+            console.error("Failed to delete port:", error);
+        }
+    };
+
+    const handleUpdatePort = (chargerId: string, portId: string) => {
+        console.log("Update port:", chargerId, portId);
+        // TODO: Implement update port functionality
     };
 
     return (
         <>
             <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
                 <DialogContent
-                    className={`fixed bottom-0 left-1/2 transform -translate-x-1/2 w-[90%] max-w-sm rounded-t-2xl border-t z-[10002] p-4 ${
+                    className={`fixed bottom-0 left-1/2 transform -translate-x-1/2 w-[90%] max-w-sm rounded-t-2xl border-t z-[10000] p-4 ${
                         isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
                     }`}
                     style={{
@@ -297,27 +319,48 @@ export function MyChargersModal({
                                                         {getChargerIcon(charger.chargerType)} {charger.chargerType}
                                                     </p>
                                                 </div>
-                                                <div className="flex flex-col gap-1">
+                                                <div className="relative">
                                                     <button
-                                                        onClick={() => handleAddPort(charger.id)}
-                                                        className={`text-sm font-medium px-3 py-0.5 rounded-lg border transition-colors ${
-                                                            isDarkMode
-                                                                ? "bg-blue-600 border-blue-500 text-white hover:bg-blue-500"
-                                                                : "bg-blue-500 border-blue-400 text-white hover:bg-blue-400"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setMenuOpenFor(menuOpenFor === charger.id ? null : charger.id);
+                                                        }}
+                                                        className={`p-1 rounded transition-colors ${
+                                                            isDarkMode ? "hover:bg-gray-600" : "hover:bg-gray-200"
                                                         }`}
                                                     >
-                                                        Add Port
+                                                        <MoreVertical className={`w-4 h-4 ${isDarkMode ? "text-gray-400" : "text-gray-600"}`} />
                                                     </button>
-                                                    <button
-                                                        onClick={() => handleDeletePort(charger.id)}
-                                                        className={`text-sm font-medium px-3 py-0.5 rounded-lg border transition-colors ${
-                                                            isDarkMode
-                                                                ? "bg-red-600 border-red-500 text-white hover:bg-red-500"
-                                                                : "bg-red-500 border-red-400 text-white hover:bg-red-400"
-                                                        }`}
-                                                    >
-                                                        Delete Port
-                                                    </button>
+                                                    {menuOpenFor === charger.id && (
+                                                        <div className={`absolute right-0 top-full mt-1 w-32 rounded-lg shadow-lg border z-[10005] ${
+                                                            isDarkMode ? "bg-gray-700 border-gray-600" : "bg-white border-gray-200"
+                                                        }`}>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleAddPort(charger.id);
+                                                                    setMenuOpenFor(null);
+                                                                }}
+                                                                className={`block w-full text-left px-3 py-2 text-sm rounded-t-lg transition-colors ${
+                                                                    isDarkMode ? "text-white hover:bg-gray-600" : "text-gray-900 hover:bg-gray-100"
+                                                                }`}
+                                                            >
+                                                                Add Port
+                                                            </button>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleDeleteCharger(charger.id);
+                                                                    setMenuOpenFor(null);
+                                                                }}
+                                                                className={`block w-full text-left px-3 py-2 text-sm rounded-b-lg transition-colors ${
+                                                                    isDarkMode ? "text-white hover:bg-gray-600" : "text-red-400 hover:bg-gray-600"
+                                                                }`}
+                                                            >
+                                                                Delete Charger
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                             {expandedChargers.has(charger.id) && (
@@ -333,7 +376,7 @@ export function MyChargersModal({
                                                                 {charger.connectors.map((port: ConnectorBackend) => (
                                                                     <div
                                                                         key={port.id}
-                                                                        className={`flex items-center p-3 rounded-lg ${
+                                                                        className={`relative flex items-center p-3 rounded-lg ${
                                                                             isDarkMode ? "bg-gray-700" : "bg-white"
                                                                         }`}
                                                                     >
@@ -348,7 +391,7 @@ export function MyChargersModal({
                                                                                     Port {port.port_number}
                                                                                 </h5>
                                                                                 {editingPortId === port.id ? (
-                                                                                    <div className="absolute top-full right-0 flex flex-col gap-1 bg-white dark:bg-gray-700 p-1 rounded shadow border z-10">
+                                                                                    <div className="absolute top-full right-0 flex flex-col gap-1 bg-white dark:bg-gray-700 p-1 rounded shadow border z-[10005]">
                                                                                         {['available', 'occupied', 'faulty', 'unavailable'].map(status => (
                                                                                             <span
                                                                                                 key={status}
@@ -397,6 +440,49 @@ export function MyChargersModal({
                                                                             }`}>
                                                                                 ₹{port.price_per_kwh}/kWh
                                                                             </p>
+                                                                        </div>
+                                                                        <div className="absolute bottom-2 right-2">
+                                                                            <button
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setMenuOpenForPort(menuOpenForPort === port.id ? null : port.id);
+                                                                                }}
+                                                                                className={`p-1 rounded transition-colors ${
+                                                                                    isDarkMode ? "hover:bg-gray-600" : "hover:bg-gray-200"
+                                                                                }`}
+                                                                            >
+                                                                                <MoreVertical className={`w-4 h-4 ${isDarkMode ? "text-gray-400" : "text-gray-600"}`} />
+                                                                            </button>
+                                                                            {menuOpenForPort === port.id && (
+                                                                                <div className={`absolute right-0 top-full mt-1 w-32 rounded-lg shadow-lg border z-[10005] ${
+                                                                                    isDarkMode ? "bg-gray-700 border-gray-600" : "bg-white border-gray-200"
+                                                                                }`}>
+                                                                                    <button
+                                                                                        onClick={(e) => {
+                                                                                            e.stopPropagation();
+                                                                                            handleUpdatePort(charger.id, port.id);
+                                                                                            setMenuOpenForPort(null);
+                                                                                        }}
+                                                                                        className={`block w-full text-left px-3 py-2 text-sm rounded-t-lg transition-colors ${
+                                                                                            isDarkMode ? "text-white hover:bg-gray-600" : "text-gray-900 hover:bg-gray-100"
+                                                                                        }`}
+                                                                                    >
+                                                                                        Update Port
+                                                                                    </button>
+                                                                                    <button
+                                                                                        onClick={(e) => {
+                                                                                            e.stopPropagation();
+                                                                                            handleDeletePort(charger.id, port.id);
+                                                                                            setMenuOpenForPort(null);
+                                                                                        }}
+                                                                                        className={`block w-full text-left px-3 py-2 text-sm rounded-b-lg transition-colors ${
+                                                                                            isDarkMode ? "text-white hover:bg-gray-600" : "text-red-400 hover:bg-gray-600"
+                                                                                        }`}
+                                                                                    >
+                                                                                        Delete Port
+                                                                                    </button>
+                                                                                </div>
+                                                                            )}
                                                                         </div>
                                                                     </div>
                                                                 ))}
@@ -449,6 +535,78 @@ export function MyChargersModal({
                     onSubmit={() => { fetchUserChargers(); setShowAddPortForm(false); }}
                 />
             )}
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={showDeleteConfirmation} onOpenChange={setShowDeleteConfirmation}>
+                <DialogContent className={`fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 max-w-sm z-[10010] rounded-lg border shadow-lg ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}>
+                    <DialogTitle className={`text-lg font-semibold ${isDarkMode ? "text-white" : "text-gray-900"}`}>
+                        Delete Charger {chargerToDelete?.name}?
+                    </DialogTitle>
+                    <DialogDescription className={`mt-2 ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>
+                        Are you sure you want to delete "{chargerToDelete?.name}"? This action cannot be undone.
+                    </DialogDescription>
+                    <div className="flex gap-3 mt-6">
+                        <button
+                            onClick={() => setShowDeleteConfirmation(false)}
+                            className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+                                isDarkMode
+                                    ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                            }`}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={async () => {
+                                if (!chargerToDelete) return;
+                                try {
+                                    await deleteCharger(chargerToDelete.id);
+                                    setDeletionSuccess(true);
+                                    setDeletionMessage("Charger " + chargerToDelete.name + " along with all ports deleted successfully");
+                                    setShowDeletionResult(true);
+                                    fetchUserChargers(); // Refresh list
+                                    setShowDeleteConfirmation(false);
+                                    setChargerToDelete(null);
+                                } catch (error) {
+                                    console.error("Failed to delete charger:", error);
+                                    setDeletionSuccess(false);
+                                    setDeletionMessage("Charger deletion of " + chargerToDelete.name + " unsuccessful. Try again");
+                                    setShowDeletionResult(true);
+                                    setShowDeleteConfirmation(false);
+                                    setChargerToDelete(null);
+                                }
+                            }}
+                            className="flex-1 py-2 px-4 rounded-lg font-medium bg-red-600 text-white hover:bg-red-500 transition-colors"
+                        >
+                            Delete
+                        </button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Deletion Result Dialog */}
+            <Dialog open={showDeletionResult} onOpenChange={setShowDeletionResult}>
+                <DialogContent className={`fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 max-w-sm z-[10020] rounded-lg border shadow-lg ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}>
+                    <DialogTitle className={`text-lg font-semibold ${isDarkMode ? "text-white" : "text-gray-900"}`}>
+                        {deletionMessage}
+                    </DialogTitle>
+                    <DialogDescription className={`mt-2 ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>
+                        {deletionSuccess ? "This charger won't be shown to car owners from now." : ""}
+                    </DialogDescription>
+                    <div className="flex justify-end mt-6">
+                        <button
+                            onClick={() => setShowDeletionResult(false)}
+                            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                                isDarkMode
+                                    ? "bg-blue-600 text-white hover:bg-blue-500"
+                                    : "bg-blue-500 text-white hover:bg-blue-400"
+                            }`}
+                        >
+                            OK
+                        </button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </>
     );
 }
