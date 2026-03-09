@@ -32,6 +32,7 @@ import SubscriptionPage from "./SubscriptionPage";
 import AboutPage from "./AboutPage";
 import PrivacyPolicyPage from "./PrivacyPolicyPage";
 import TermsAndConditionsPage from "./TermsAndConditionsPage";
+import LandingPage from "./LandingPage";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 
@@ -1128,7 +1129,7 @@ export default function App() {
 
     const [showChargers, setShowChargers] = useState(false);
 
-    const [currentPage, setCurrentPage] = useState<"home" | "account" | "edit-profile" | "subscription" | "about" | "privacy-policy" | "terms">("home");
+    const [currentPage, setCurrentPage] = useState<"landing" | "login" | "home" | "account" | "edit-profile" | "subscription" | "about" | "privacy-policy" | "terms">("landing");
 
     const [isDarkMode, setIsDarkMode] = useState(false);
 
@@ -1443,7 +1444,10 @@ export default function App() {
 
             setStations(data);
 
-            setShowChargers(true);
+            // Only show chargers for vehicle owners, not charger owners
+            if (userRole === 'vehicle_owner') {
+                setShowChargers(true);
+            }
         } catch (error: unknown) {
             console.error("❌ Error fetching stations:", error);
 
@@ -1519,18 +1523,30 @@ export default function App() {
     }, [isAuthenticated]);
 
     return (
-        // Show login page if not authenticated, otherwise show main app
-
+        // Show different pages based on authentication and current page
         !isAuthenticated ? (
-            <LoginPage 
-                onLoginSuccess={(user: any) => {
-                    setIsAuthenticated(true);
-                    if (user && user.role) {
+            // Non-authenticated user flow - show landing page first
+            currentPage === "landing" ? (
+                <LandingPage
+                    isDarkMode={isDarkMode}
+                    setCurrentPage={setCurrentPage}
+                />
+            ) : currentPage === "login" ? (
+                <LoginPage
+                    onLoginSuccess={(user) => {
+                        setIsAuthenticated(true);
+                        setUserProfile(user);
                         setUserRole(user.role);
-                    }
-                }} 
-                isDarkMode={isDarkMode} 
-            />
+                        setCurrentPage("home");
+                    }}
+                    isDarkMode={isDarkMode}
+                />
+            ) : (
+                <LandingPage
+                    isDarkMode={isDarkMode}
+                    setCurrentPage={setCurrentPage}
+                />
+            )
         ) : (
             <div
                 className={`min-h-screen pb-16 transition-colors duration-300 ${isDarkMode ? "bg-gray-900" : "bg-gray-50"}`}
@@ -1704,24 +1720,7 @@ export default function App() {
                                 </div>
                             )}
 
-                            {userRole === 'charger_owner' && (
-                                <div className="absolute bottom-40 left-4 z-[1000]">
-                                    <div
-                                        className={`flex flex-col items-center justify-center w-20 h-20 rounded-lg shadow-lg border cursor-pointer transition-all duration-200 hover:scale-105 ${
-                                            isDarkMode
-                                                ? "bg-gray-800 border-gray-700 text-white hover:bg-gray-750"
-                                                : "bg-white border-gray-200 text-gray-900 hover:bg-gray-50"
-                                        }`}
-                                        onClick={() => setShowMyChargersModal(true)}
-                                    >
-                                        <ZapIcon className="w-6 h-6 mb-0" />
-                                        <span className="text-xs font-medium text-center leading-tight">
-                                            Chargers
-                                        </span>
-                                    </div>
-                                </div>
-                            )}
-
+                            
                             {/* My Vehicles Modal */}
                             <MyVehiclesModal
                                 isOpen={showVehiclesModal}
@@ -1814,7 +1813,78 @@ export default function App() {
                         setCurrentPage={setCurrentPage}
                         userRole={userRole}
                     />
-                ) : currentPage === "edit-profile" ? (
+                ) : currentPage === "landing" ? (
+                    <LandingPage
+                        isDarkMode={isDarkMode}
+                        setCurrentPage={setCurrentPage}
+                    />
+                ) : currentPage === "login" ? (
+                    <LoginPage
+                        onLoginSuccess={(user) => {
+                            setUserProfile(user);
+                            setUserRole(user.role);
+                            setCurrentPage("home");
+                        }}
+                        isDarkMode={isDarkMode}
+                    />
+                ) : null}
+
+                {currentPage === "home" && (
+                    <>
+
+                        {userRole === 'charger_owner' && !showMyChargersModal && (
+                            <div className="fixed bottom-48 left-4 z-[10001]">
+                                <div
+                                    className={`flex flex-col items-center justify-center w-20 h-20 rounded-lg shadow-lg border cursor-pointer ${
+                                        isDarkMode
+                                            ? "bg-gray-800 border-gray-700 text-white hover:bg-gray-750"
+                                            : "bg-white border-gray-200 text-gray-900 hover:bg-gray-50"
+                                    }`}
+                                    onClick={() => setShowMyChargersModal(true)}
+                                >
+                                    <ZapIcon className="w-6 h-6 mb-0" />
+                                    <span className="text-xs font-medium text-center leading-tight">
+                                        Chargers
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* My Vehicles Modal */}
+                        <MyVehiclesModal
+                            isOpen={showVehiclesModal}
+                            onClose={() => setShowVehiclesModal(false)}
+                            onSelectCar={setSelectedCar}
+                            currentSelectedCar={selectedCar}
+                            isDarkMode={isDarkMode}
+                        />
+
+                        {/* My Chargers Modal */}
+                        <MyChargersModal
+                            isOpen={showMyChargersModal}
+                            onClose={() => setShowMyChargersModal(false)}
+                            isDarkMode={isDarkMode}
+                        />
+
+                        {/* Charger Details Modal */}
+                        {selectedCharger && (
+                            <ChargerDetailsModal
+                                isOpen={showChargerDetails}
+                                onClose={() => setShowChargerDetails(false)}
+                                isDarkMode={isDarkMode}
+                                stationName={selectedCharger.name}
+                                connectors={selectedCharger.connectors || []}
+                                isLoading={isLoadingPorts}
+                                userRole="user"
+                                chargerId={selectedCharger.id.toString()}
+                                selectedCar={selectedCar}
+                            />
+                        )}
+
+                                            </>
+                )}
+
+                {currentPage === "edit-profile" ? (
                     <EditProfilePage
                         isDarkMode={isDarkMode}
                         setCurrentPage={setCurrentPage}
