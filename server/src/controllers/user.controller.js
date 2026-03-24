@@ -332,10 +332,12 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
         }
     }
 
+    // Clean up temp file if it still exists (in case uploadOnCloudinary failed to delete it)
     try {
         await fs.unlink(avatarLocalPath);
     } catch (err) {
-        console.warn("Failed to remove temp avatar file:", err);
+        // File already deleted by uploadOnCloudinary, which is expected
+        // No need to log this as it's normal behavior
     }
 
     return res
