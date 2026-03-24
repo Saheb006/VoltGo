@@ -12,6 +12,7 @@ import fs from "fs/promises";
 import crypto from "crypto";
 import sendEmail from "../utils/sendEmail.js";
 import jwt from "jsonwebtoken";
+import { getCookieOptions } from "../utils/cookieOptions.js";
 
 const generateAccessAndRefreshTokens = async (userId) => {
     try {
