@@ -1,6 +1,6 @@
 import { Zap } from "lucide-react";
 
-const Footer = () => {
+const Footer = ({ setCurrentPage }: { setCurrentPage: (page: "landing" | "login" | "home" | "account" | "edit-profile" | "subscription" | "about" | "privacy-policy" | "terms" | "refund-policy" | "contact") => void }) => {
   return (
     <footer className="bg-slate-900 border-t border-slate-800 py-12">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -35,10 +35,9 @@ const Footer = () => {
           <div>
             <h4 className="font-display font-semibold text-white mb-4">Company</h4>
             <ul className="space-y-2 text-sm text-slate-300">
-              <li><a href="#" className="hover:text-emerald-400 transition-colors">About Us</a></li>
               <li><a href="#" className="hover:text-emerald-400 transition-colors">Blog</a></li>
               <li><a href="#" className="hover:text-emerald-400 transition-colors">Careers</a></li>
-              <li><a href="#" className="hover:text-emerald-400 transition-colors">Contact</a></li>
+              <li><button onClick={() => setCurrentPage("contact")} className="hover:text-emerald-400 transition-colors text-left cursor-pointer underline">Contact</button></li>
             </ul>
           </div>
 
@@ -46,8 +45,9 @@ const Footer = () => {
           <div>
             <h4 className="font-display font-semibold text-white mb-4">Legal</h4>
             <ul className="space-y-2 text-sm text-slate-300">
-              <li><a href="#" className="hover:text-emerald-400 transition-colors">Privacy Policy</a></li>
-              <li><a href="#" className="hover:text-emerald-400 transition-colors">Terms of Service</a></li>
+              <li><button onClick={() => setCurrentPage("privacy-policy")} className="hover:text-emerald-400 transition-colors text-left cursor-pointer underline">Privacy Policy</button></li>
+              <li><button onClick={() => setCurrentPage("terms")} className="hover:text-emerald-400 transition-colors text-left cursor-pointer underline">Terms of Service</button></li>
+              <li><button onClick={() => setCurrentPage("refund-policy")} className="hover:text-emerald-400 transition-colors text-left cursor-pointer underline">Refund Policy</button></li>
               <li><a href="#" className="hover:text-emerald-400 transition-colors">Cookie Policy</a></li>
             </ul>
           </div>

@@ -9,7 +9,7 @@ import {
 } from "../controllers/chargerPort.controller.js";
 
 import { checkActiveSubscription } from "../middlewares/checkActiveSubscription.middleware.js";
-import { checkPortLimit } from "../middlewares/checkPortLimit.middleware.js";
+import { checkPortLimitOnly } from "../middlewares/checkPortLimitOnly.middleware.js";
 const router = Router({ mergeParams: true });
 
 // create port under charger
@@ -17,7 +17,7 @@ router.post(
     "/",
     verifyJWT,
     checkActiveSubscription, // 🔒 must have active plan
-    checkPortLimit, // 🔑 enforces max_ports_per_charger
+    checkPortLimitOnly, // 🔑 enforces max_ports_per_charger
     createChargerPort
 );
 

@@ -6,6 +6,7 @@ import userRoutes from "./routes/user.routes.js";
 import carRoutes from "./routes/car.routes.js";
 import chargerRoutes from "./routes/charger.routes.js";
 import subscriptionRoutes from "./routes/subscription.routes.js";
+import contactRoutes from "./routes/contact.routes.js";
 
 import { ApiResponse } from "./utils/ApiResponse.js";
 import { ApiError } from "./utils/ApiError.js";
@@ -17,6 +18,7 @@ app.use(
         origin: [
             process.env.CORS_ORIGIN,
             "http://localhost:5173",
+            "http://localhost:5174",
             "http://localhost:9000",
         ],
         credentials: true,
@@ -45,6 +47,7 @@ app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/cars", carRoutes);
 app.use("/api/v1/chargers", chargerRoutes);
 app.use("/api/v1/subscriptions", subscriptionRoutes);
+app.use("/api/v1/contact", contactRoutes);
 
 app.get("/home", (req, res) => {
     res.send("Backend is running");

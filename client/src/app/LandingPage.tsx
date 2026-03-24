@@ -19,7 +19,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ isDarkMode, setCurrentPage })
             <HowItWorks />
             <Features />
             <OwnerCTA setCurrentPage={setCurrentPage} />
-            <Footer />
+            <Footer setCurrentPage={setCurrentPage} />
         </div>
     );
 };

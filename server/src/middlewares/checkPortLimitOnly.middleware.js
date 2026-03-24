@@ -2,18 +2,21 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import SubscriptionPlan from "../models/subscription_plan.model.js";
 import ChargerPort from "../models/chargerPort.model.js";
+import Subscription from "../models/subscription.model.js";
 
-export const checkPortLimit = asyncHandler(async (req, res, next) => {
-    // only charger owners need subscription checks
+export const checkPortLimitOnly = asyncHandler(async (req, res, next) => {
+    // only charger owners need port limits
     if (req.user.role !== "charger_owner") {
         return next();
     }
 
-    console.log("🔍 Checking port limit for user:", req.user._id);
+    console.log("🔍 Checking port limit ONLY for user:", req.user._id);
 
-    const subscription = req.subscription;
+    // Get the user's subscription to find their plan
+    const subscription = await Subscription.findOne({
+        owner_id: req.user._id,
+    });
 
-    // If no subscription, block - user needs to purchase one
     if (!subscription) {
         console.log("❌ No subscription found for user:", req.user._id);
         throw new ApiError(
@@ -53,23 +56,6 @@ export const checkPortLimit = asyncHandler(async (req, res, next) => {
         );
     }
 
-    // Now check if subscription is active
-    if (subscription.status === "expired" || subscription.ends_at <= new Date()) {
-        console.log("❌ Subscription expired for user:", req.user._id);
-        throw new ApiError(
-            403,
-            "Your subscription has expired. Please renew your subscription plan to add ports."
-        );
-    }
-
-    if (subscription.status !== "active") {
-        console.log("❌ Subscription not active for user:", req.user._id, "Status:", subscription.status);
-        throw new ApiError(
-            403,
-            "Your subscription is not active. Please purchase a subscription plan to add ports."
-        );
-    }
-
-    console.log("✅ Port limit and subscription check passed");
+    console.log("✅ Port limit check passed");
     next();
 });

@@ -28,14 +28,29 @@ const startSubscription = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Subscription plan not found or inactive");
     }
 
-    const existingSubscription = await Subscription.findOne({
+    // Check for existing ACTIVE subscription
+    const existingActiveSubscription = await Subscription.findOne({
         owner_id: req.user._id,
         status: "active",
+        ends_at: { $gt: new Date() },
     });
 
-    if (existingSubscription) {
+    if (existingActiveSubscription) {
         throw new ApiError(400, "Active subscription already exists");
     }
+
+    // If user has expired subscriptions, update them to expired status
+    await Subscription.updateMany(
+        {
+            owner_id: req.user._id,
+            status: { $ne: "expired" },
+            $or: [
+                { ends_at: { $lte: new Date() } },
+                { status: { $in: ["cancelled", "paused"] } }
+            ]
+        },
+        { status: "expired" }
+    );
 
     const endsAt = new Date();
     endsAt.setDate(endsAt.getDate() + 30); // temporary: monthly
@@ -46,6 +61,8 @@ const startSubscription = asyncHandler(async (req, res) => {
         starts_at: new Date(),
         ends_at: endsAt,
     });
+
+    console.log("🎉 New subscription created:", subscription._id);
 
     return res
         .status(201)

@@ -12,6 +12,6 @@ const router = Router();
 router.post("/start", verifyJWT, startSubscription);
 router.get("/me", verifyJWT, getMySubscription);
 router.get("/history", verifyJWT, listMySubscriptions); //tested all
-router.get("/plans", verifyJWT, getSubscriptionPlans);
+router.get("/plans", getSubscriptionPlans); // Make plans public - no auth required
 
 export default router;

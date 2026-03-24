@@ -2,25 +2,14 @@ import React from "react";
 
 interface TermsAndConditionsPageProps {
     isDarkMode: boolean;
-    setCurrentPage: (page: "home" | "account" | "edit-profile" | "subscription" | "about" | "privacy-policy" | "terms") => void;
 }
 
-const TermsAndConditionsPage: React.FC<TermsAndConditionsPageProps> = ({ isDarkMode, setCurrentPage }) => {
+const TermsAndConditionsPage: React.FC<TermsAndConditionsPageProps> = ({ isDarkMode }) => {
     return (
         <div className={`min-h-screen p-6 ${isDarkMode ? "bg-gray-900 text-white" : "bg-gray-50 text-gray-900"}`}>
             <div className="max-w-4xl mx-auto">
-                <div className="flex items-center justify-between mb-6">
+                <div className="mb-6">
                     <h1 className="text-2xl font-bold">Terms and Conditions</h1>
-                    <button
-                        onClick={() => setCurrentPage("about")}
-                        className={`px-4 py-2 rounded-lg transition-colors ${
-                            isDarkMode
-                                ? "bg-gray-800 text-white hover:bg-gray-700"
-                                : "bg-white text-gray-900 hover:bg-gray-100 border border-gray-200"
-                        }`}
-                    >
-                        Back to About Us
-                    </button>
                 </div>
 
                 <div className={`p-6 rounded-lg shadow-sm border ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}>

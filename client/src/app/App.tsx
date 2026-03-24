@@ -32,6 +32,8 @@ import SubscriptionPage from "./SubscriptionPage";
 import AboutPage from "./AboutPage";
 import PrivacyPolicyPage from "./PrivacyPolicyPage";
 import TermsAndConditionsPage from "./TermsAndConditionsPage";
+import RefundPolicyPage from "./RefundPolicyPage";
+import ContactPage from "./ContactPage";
 import LandingPage from "./LandingPage";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
@@ -844,14 +846,16 @@ function EditProfilePage({
             } else {
                 throw new Error("Failed to update avatar");
             }
-        } catch (error: unknown) {
+        } catch (error) {
             console.error("Update avatar error:", error);
             setAvatarErrorMessage(
-                error instanceof Error ? error.message : "Failed to update avatar",
+                error instanceof Error
+                    ? error.message
+                    : "Failed to update avatar. Please try again."
             );
             setTimeout(() => {
                 setAvatarErrorMessage(null);
-            }, 5000);
+            }, 3000);
         } finally {
             setIsUpdatingAvatar(false);
         }
@@ -1129,7 +1133,58 @@ export default function App() {
 
     const [showChargers, setShowChargers] = useState(false);
 
-    const [currentPage, setCurrentPage] = useState<"landing" | "login" | "home" | "account" | "edit-profile" | "subscription" | "about" | "privacy-policy" | "terms">("landing");
+    const [currentPage, setCurrentPage] = useState<"landing" | "login" | "home" | "account" | "edit-profile" | "subscription" | "about" | "privacy-policy" | "terms" | "refund-policy" | "contact">("landing");
+
+    // Update URL when page changes
+    const updatePage = (page: typeof currentPage) => {
+        setCurrentPage(page);
+        
+        // Update browser URL
+        const urlMap = {
+            "landing": "/",
+            "login": "/login",
+            "home": "/home",
+            "account": "/account",
+            "edit-profile": "/edit-profile",
+            "subscription": "/subscription",
+            "about": "/about",
+            "privacy-policy": "/privacy-policy",
+            "terms": "/terms",
+            "refund-policy": "/refund-policy",
+            "contact": "/contact"
+        };
+        
+        window.history.pushState(null, "", urlMap[page]);
+    };
+
+    // Handle browser back/forward button
+    useEffect(() => {
+        const handlePopState = () => {
+            const currentPath = window.location.pathname;
+            const pathToPageMap: Record<string, typeof currentPage> = {
+                "/": "landing",
+                "/login": "login",
+                "/home": "home",
+                "/account": "account",
+                "/edit-profile": "edit-profile",
+                "/subscription": "subscription",
+                "/about": "about",
+                "/privacy-policy": "privacy-policy",
+                "/terms": "terms",
+                "/refund-policy": "refund-policy",
+                "/contact": "contact"
+            };
+            
+            const newPage = pathToPageMap[currentPath] || "landing";
+            setCurrentPage(newPage);
+        };
+
+        // Set initial page based on current URL
+        handlePopState();
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, []);
 
     const [isDarkMode, setIsDarkMode] = useState(false);
 
@@ -1529,7 +1584,7 @@ export default function App() {
             currentPage === "landing" ? (
                 <LandingPage
                     isDarkMode={isDarkMode}
-                    setCurrentPage={setCurrentPage}
+                    setCurrentPage={updatePage}
                 />
             ) : currentPage === "login" ? (
                 <LoginPage
@@ -1537,14 +1592,30 @@ export default function App() {
                         setIsAuthenticated(true);
                         setUserProfile(user);
                         setUserRole(user.role);
-                        setCurrentPage("home");
+                        updatePage("home");
                     }}
+                    isDarkMode={isDarkMode}
+                />
+            ) : currentPage === "privacy-policy" ? (
+                <PrivacyPolicyPage
+                    isDarkMode={isDarkMode}
+                />
+            ) : currentPage === "terms" ? (
+                <TermsAndConditionsPage
+                    isDarkMode={isDarkMode}
+                />
+            ) : currentPage === "refund-policy" ? (
+                <RefundPolicyPage
+                    isDarkMode={isDarkMode}
+                />
+            ) : currentPage === "contact" ? (
+                <ContactPage
                     isDarkMode={isDarkMode}
                 />
             ) : (
                 <LandingPage
                     isDarkMode={isDarkMode}
-                    setCurrentPage={setCurrentPage}
+                    setCurrentPage={updatePage}
                 />
             )
         ) : (
@@ -1810,20 +1881,20 @@ export default function App() {
                         setShowDeleteModal={setShowDeleteModal}
                         deleteForm={deleteForm}
                         setDeleteForm={setDeleteForm}
-                        setCurrentPage={setCurrentPage}
+                        setCurrentPage={updatePage}
                         userRole={userRole}
                     />
                 ) : currentPage === "landing" ? (
                     <LandingPage
                         isDarkMode={isDarkMode}
-                        setCurrentPage={setCurrentPage}
+                        setCurrentPage={updatePage}
                     />
                 ) : currentPage === "login" ? (
                     <LoginPage
                         onLoginSuccess={(user) => {
                             setUserProfile(user);
                             setUserRole(user.role);
-                            setCurrentPage("home");
+                            updatePage("home");
                         }}
                         isDarkMode={isDarkMode}
                     />
@@ -1887,29 +1958,35 @@ export default function App() {
                 {currentPage === "edit-profile" ? (
                     <EditProfilePage
                         isDarkMode={isDarkMode}
-                        setCurrentPage={setCurrentPage}
+                        setCurrentPage={updatePage}
                         setUserProfile={setUserProfile}
                         userProfile={userProfile}
                     />
                 ) : currentPage === "subscription" ? (
                     <SubscriptionPage
                         isDarkMode={isDarkMode}
-                        setCurrentPage={setCurrentPage}
+                        setCurrentPage={updatePage}
                     />
                 ) : currentPage === "about" ? (
                     <AboutPage
                         isDarkMode={isDarkMode}
-                        setCurrentPage={setCurrentPage}
+                        setCurrentPage={updatePage}
                     />
                 ) : currentPage === "privacy-policy" ? (
                     <PrivacyPolicyPage
                         isDarkMode={isDarkMode}
-                        setCurrentPage={setCurrentPage}
                     />
                 ) : currentPage === "terms" ? (
                     <TermsAndConditionsPage
                         isDarkMode={isDarkMode}
-                        setCurrentPage={setCurrentPage}
+                    />
+                ) : currentPage === "refund-policy" ? (
+                    <RefundPolicyPage
+                        isDarkMode={isDarkMode}
+                    />
+                ) : currentPage === "contact" ? (
+                    <ContactPage
+                        isDarkMode={isDarkMode}
                     />
                 ) : null}
 
@@ -1920,7 +1997,7 @@ export default function App() {
                 >
                     <div className="max-w-2xl mx-auto px-4 py-2 flex items-center justify-around">
                         <button
-                            onClick={() => setCurrentPage("home")}
+                            onClick={() => updatePage("home")}
                             className={`flex flex-col items-center gap-0.5 transition-colors py-1 ${
                                 currentPage === "home"
                                     ? isDarkMode
@@ -1953,7 +2030,7 @@ export default function App() {
                         </button>
 
                         <button
-                            onClick={() => setCurrentPage("account")}
+                            onClick={() => updatePage("account")}
                             className={`flex flex-col items-center gap-0.5 transition-colors py-1 ${
                                 currentPage === "account"
                                     ? isDarkMode
