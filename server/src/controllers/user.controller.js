@@ -4,15 +4,16 @@ import User from "../models/user.model.js";
 import Car from "../models/car.model.js";
 import {
     uploadOnCloudinary,
+    uploadBufferToCloudinary,
     deleteFromCloudinary,
 } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import { getCookieOptions } from "../utils/cookieOptions.js";
 import bcrypt from "bcrypt";
 import fs from "fs/promises";
 import crypto from "crypto";
 import sendEmail from "../utils/sendEmail.js";
 import jwt from "jsonwebtoken";
-import { getCookieOptions } from "../utils/cookieOptions.js";
 
 const generateAccessAndRefreshTokens = async (userId) => {
     try {
@@ -77,20 +78,23 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(409, "User with email or username already exists");
     }
 
-    const avatarLocalPath = req.files?.avatar[0]?.path; // get avatar path from multer
-
-    if (!avatarLocalPath) {
+    // Check if avatar file was uploaded
+    if (!req.files?.avatar || !req.files.avatar[0]) {
         throw new ApiError(400, "Avatar file is required");
     }
 
-    const avatar = await uploadOnCloudinary(avatarLocalPath);
+    // Get file buffer and metadata from memory storage
+    const { buffer, originalname, mimetype } = req.files.avatar[0];
+
+    // Upload buffer directly to Cloudinary
+    const avatar = await uploadBufferToCloudinary(buffer, originalname, mimetype);
 
     // ⬇️ moved log here, after avatar is defined
     console.log({
         fullName,
         email,
         username,
-        avatar: avatar?.url,
+        avatar: avatar?.secure_url,
         types: {
             fullName: typeof fullName,
             email: typeof email,
@@ -99,13 +103,13 @@ const registerUser = asyncHandler(async (req, res) => {
         },
     });
 
-    if (!avatar) {
-        throw new ApiError(405, "Avatar file is required");
+    if (!avatar?.secure_url) {
+        throw new ApiError(405, "Avatar file upload failed");
     }
 
     const user = await User.create({
         fullName,
-        avatar: avatar.url,
+        avatar: avatar.secure_url,
         email,
         password,
         role,
@@ -302,42 +306,42 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
 });
 
 const updateUserAvatar = asyncHandler(async (req, res) => {
-    const avatarLocalPath = req.file?.path;
-    if (!avatarLocalPath) throw new ApiError(400, "Avatar file is required");
+    // Check if file was uploaded
+    if (!req.file) {
+        throw new ApiError(400, "Avatar file is required");
+    }
+
+    // Get file buffer and metadata from memory storage
+    const { buffer, originalname, mimetype } = req.file;
 
     // Get old avatar BEFORE updating
     const userBeforeUpdate = await User.findById(req.user._id);
-
     if (!userBeforeUpdate) {
         throw new ApiError(404, "User not found");
     }
 
     const previousAvatarUrl = userBeforeUpdate.avatar;
 
-    const avatar = await uploadOnCloudinary(avatarLocalPath);
-    if (!avatar.url) throw new ApiError(500, "Error uploading avatar");
+    // Upload buffer directly to Cloudinary
+    const avatar = await uploadBufferToCloudinary(buffer, originalname, mimetype);
+    if (!avatar?.secure_url) {
+        throw new ApiError(500, "Error uploading avatar to Cloudinary");
+    }
 
+    // Update user avatar in database
     const updatedUser = await User.findByIdAndUpdate(
         req.user._id,
-        { $set: { avatar: avatar.url } },
+        { $set: { avatar: avatar.secure_url } },
         { new: true }
     ).select("-password -refreshToken");
 
-    // Pass old URL to delete function
+    // Delete old avatar from Cloudinary
     if (previousAvatarUrl) {
         try {
             await deleteFromCloudinary(previousAvatarUrl);
         } catch (err) {
             console.warn("Failed to delete old avatar:", err);
         }
-    }
-
-    // Clean up temp file if it still exists (in case uploadOnCloudinary failed to delete it)
-    try {
-        await fs.unlink(avatarLocalPath);
-    } catch (err) {
-        // File already deleted by uploadOnCloudinary, which is expected
-        // No need to log this as it's normal behavior
     }
 
     return res

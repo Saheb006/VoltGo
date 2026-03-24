@@ -1,5 +1,5 @@
 import { v2 as cloudinary } from "cloudinary";
-import fs from "fs";
+import { Readable } from "stream";
 
 // Configuration (kept same)
 cloudinary.config({
@@ -8,6 +8,39 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// Upload file from buffer (memory storage)
+const uploadBufferToCloudinary = async (buffer, originalName, mimeType) => {
+    return new Promise((resolve, reject) => {
+        // Create a readable stream from buffer
+        const stream = Readable.from(buffer);
+        
+        // Upload options
+        const uploadOptions = {
+            resource_type: "auto",
+            folder: "avatars", // Organize avatars in a folder
+            public_id: `${Date.now()}-${originalName.split('.')[0]}`, // Unique filename
+            format: mimeType.split('/')[1] || 'jpg', // Get file extension from mime type
+        };
+
+        // Upload stream to Cloudinary
+        const uploadStream = cloudinary.uploader.upload_stream(
+            uploadOptions,
+            (error, result) => {
+                if (error) {
+                    console.error("Cloudinary upload error:", error);
+                    reject(error);
+                } else {
+                    resolve(result);
+                }
+            }
+        );
+
+        // Pipe the buffer stream to Cloudinary
+        stream.pipe(uploadStream);
+    });
+};
+
+// Legacy function for backward compatibility (now uses buffer upload)
 const uploadOnCloudinary = async (localfilepath) => {
     try {
         if (!localfilepath) return null;
@@ -16,12 +49,9 @@ const uploadOnCloudinary = async (localfilepath) => {
             resource_type: "auto",
         });
 
-        // console.log("file uploaded in cloudinary");
-        // console.log(response.url);
-        fs.unlinkSync(localfilepath); // Delete local file after upload
+        // Note: fs.unlinkSync removed since we're not using local files anymore
         return response;
     } catch (error) {
-        fs.unlinkSync(localfilepath);
         console.log("Error uploading file to Cloudinary:", error.message);
         return null;
     }
@@ -42,4 +72,4 @@ const deleteFromCloudinary = async (url) => {
     }
 };
 
-export { uploadOnCloudinary, deleteFromCloudinary };
+export { uploadOnCloudinary, uploadBufferToCloudinary, deleteFromCloudinary };
