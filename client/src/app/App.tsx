@@ -20,7 +20,7 @@ import {
     Info,  //
 } from "lucide-react";
 
-import axios from 'axios';
+import { apiClient } from "../services/apiClient";
 
 import LoginPage from "./components/LoginPage";
 import MapComponent from "./components/Map";
@@ -1543,9 +1543,7 @@ export default function App() {
 
     const fetchUserVehicles = async () => {
         try {
-            const response = await axios.get('http://localhost:9000/api/v1/cars/my', {
-                withCredentials: true
-            });
+            const response = await apiClient.get('/api/v1/cars/my');
             setUserVehicles(response.data.data || []);
         } catch (err) {
             console.error('Error fetching vehicles:', err);

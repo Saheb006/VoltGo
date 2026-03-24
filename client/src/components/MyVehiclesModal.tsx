@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from "react";
-import { Car, Plus, X, Edit, Trash } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Car, Edit, Trash } from "lucide-react";
 import {
     Dialog,
     DialogContent,
     DialogTitle,
     DialogDescription,
 } from "../app/components/ui/dialog";
-import axios from 'axios';
+import { apiClient } from "../services/apiClient";
 
 interface Vehicle {
     _id: string;
@@ -89,9 +89,7 @@ export function MyVehiclesModal({
         setLoading(true);
         setError(null);
         try {
-            const response = await axios.get('http://localhost:9000/api/v1/cars/my', {
-                withCredentials: true
-            });
+            const response = await apiClient.get('/api/v1/cars/my');
             setVehicles(response.data.data);
         } catch (err) {
             console.error('Error fetching vehicles:', err);
@@ -140,9 +138,7 @@ export function MyVehiclesModal({
         setDeleting(true);
         const timeout = setTimeout(() => setDeleting(false), 5000); // Reset after 5 seconds to prevent freeze
         try {
-            await axios.delete(`http://localhost:9000/api/v1/cars/${vehicleToDelete._id}`, {
-                withCredentials: true
-            });
+            await apiClient.delete(`/api/v1/cars/${vehicleToDelete._id}`);
             // Refresh vehicles list
             await fetchUserVehicles();
             setShowDeleteConfirm(false);
@@ -187,14 +183,10 @@ export function MyVehiclesModal({
 
             if (selectedCarForUpdate) {
                 // Update existing car
-                await axios.patch(`http://localhost:9000/api/v1/cars/${selectedCarForUpdate._id}`, carData, {
-                    withCredentials: true
-                });
+                await apiClient.patch(`/api/v1/cars/${selectedCarForUpdate._id}`, carData);
             } else {
                 // Add new car
-                await axios.post('http://localhost:9000/api/v1/cars/postcar', carData, {
-                    withCredentials: true
-                });
+                await apiClient.post('/api/v1/cars/postcar', carData);
             }
 
             // Refresh vehicles list

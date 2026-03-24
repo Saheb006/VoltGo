@@ -29,7 +29,8 @@ const ContactPage: React.FC<ContactPageProps> = ({ isDarkMode }) => {
         setErrorMessage("");
 
         try {
-            const response = await fetch("http://localhost:9000/api/v1/contact/send", {
+            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+            const response = await fetch(`${API_BASE_URL}/api/v1/contact/send`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

@@ -8,7 +8,7 @@ import Footer from "./components/Footer";
 
 interface LandingPageProps {
     isDarkMode: boolean;
-    setCurrentPage: (page: "landing" | "login" | "home" | "account" | "edit-profile" | "subscription" | "about" | "privacy-policy" | "terms") => void;
+    setCurrentPage: (page: "landing" | "login" | "home" | "account" | "edit-profile" | "subscription" | "about" | "privacy-policy" | "terms" | "refund-policy" | "contact") => void;
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ isDarkMode, setCurrentPage }) => {
