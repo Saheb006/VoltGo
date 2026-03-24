@@ -162,10 +162,7 @@ const loginUser = asyncHandler(async (req, res) => {
         "-password -refreshToken"
     );
 
-    const options = {
-        httpOnly: true,
-        secure: false,
-    };
+    const options = getCookieOptions();
 
     return res
         .status(200)
@@ -193,10 +190,7 @@ const logoutUser = asyncHandler(async (req, res) => {
         }
     );
 
-    const options = {
-        httpOnly: true,
-        secure: false,
-    };
+    const options = getCookieOptions();
 
     return res
         .status(200)
@@ -229,10 +223,7 @@ const refreshJWTtocken = asyncHandler(async (req, res) => {
             throw new ApiError(401, "Refresh token does not match");
         }
 
-        const options = {
-            httpOnly: true,
-            secure: false,
-        };
+        const options = getCookieOptions();
 
         const { accessToken, newRefreshTocken } =
             await generateAccessAndRefreshTokens(user?._id);
@@ -488,10 +479,7 @@ const deleteAccount = asyncHandler(async (req, res) => {
 
     await user.deleteOne();
 
-    const options = {
-        httpOnly: true,
-        secure: false, // env-based in production
-    };
+    const options = getCookieOptions();
 
     return res
         .status(200)
