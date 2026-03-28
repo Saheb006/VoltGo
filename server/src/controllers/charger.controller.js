@@ -2,7 +2,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import Charger from "../models/charger.model.js";
-import { uploadOnCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js";
+import { uploadOnCloudinary, uploadBufferToCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js";
 import ChargerPort from "../models/chargerPort.model.js";
 
 // createCharger
@@ -26,12 +26,16 @@ const createCharger = asyncHandler(async (req, res) => {
         throw new ApiError(403, "Only charger owners can add chargers");
     }
 
-    const imageLocalPath = req.file?.path;
-    if (!imageLocalPath) {
+    const imageBuffer = req.file?.buffer;
+    if (!imageBuffer) {
         throw new ApiError(400, "Charger image is required");
     }
 
-    const uploadedImage = await uploadOnCloudinary(imageLocalPath);
+    const uploadedImage = await uploadBufferToCloudinary(
+        imageBuffer, 
+        req.file.originalname, 
+        req.file.mimetype
+    );
     if (!uploadedImage?.url) {
         throw new ApiError(500, "Failed to upload charger image");
     }
@@ -121,8 +125,12 @@ const updateCharger = asyncHandler(async (req, res) => {
     }
 
     // 🔧 update image
-    if (req.file?.path) {
-        const uploadedImage = await uploadOnCloudinary(req.file.path);
+    if (req.file?.buffer) {
+        const uploadedImage = await uploadBufferToCloudinary(
+            req.file.buffer, 
+            req.file.originalname, 
+            req.file.mimetype
+        );
         if (!uploadedImage?.url) {
             throw new ApiError(500, "Failed to upload charger image");
         }

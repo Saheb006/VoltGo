@@ -17,7 +17,7 @@ const uploadBufferToCloudinary = async (buffer, originalName, mimeType) => {
         // Upload options
         const uploadOptions = {
             resource_type: "auto",
-            folder: "avatars", // Organize avatars in a folder
+            folder: "chargers", // Organize charger images in a folder
             public_id: `${Date.now()}-${originalName.split('.')[0]}`, // Unique filename
             format: mimeType.split('/')[1] || 'jpg', // Get file extension from mime type
         };
