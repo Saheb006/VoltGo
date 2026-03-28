@@ -146,7 +146,7 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, onClose, 
                                         {plan.description}
                                     </p>
                                     <p className={`text-2xl font-bold mb-4 ${isDarkMode ? "text-white" : "text-gray-900"}`}>
-                                        ${plan.price}/month
+                                        ₹{plan.price}/month
                                     </p>
                                     <ul className="space-y-1 text-sm mb-4">
                                         <li className={isDarkMode ? "text-gray-300" : "text-gray-700"}>

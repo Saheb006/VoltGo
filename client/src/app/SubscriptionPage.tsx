@@ -109,7 +109,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ isDarkMode, setCurr
                                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                                     {currentSubscription.plan_id?.description || 'No description'}
                                 </p>
-                                <p className="text-2xl font-bold">${currentSubscription.plan_id?.price || 0}/month</p>
+                                <p className="text-2xl font-bold">₹{currentSubscription.plan_id?.price || 0}/month</p>
                             </div>
                             <div>
                                 <p className="text-sm">
@@ -138,7 +138,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ isDarkMode, setCurr
                                     <p className="text-sm text-gray-600 dark:text-gray-400">{plan.description}</p>
                                 </div>
                                 <div className="space-y-4">
-                                    <p className="text-3xl font-bold">${plan.price}/month</p>
+                                    <p className="text-3xl font-bold">₹{plan.price}/month</p>
                                     <ul className="space-y-2 text-sm">
                                         <li>• Max Chargers: {plan.max_chargers}</li>
                                         <li>• Max Ports per Charger: {plan.max_ports_per_charger}</li>
@@ -172,7 +172,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ isDarkMode, setCurr
                                             <p className="text-sm text-gray-600 dark:text-gray-400">
                                                 {sub.starts_at && sub.ends_at ? `${new Date(sub.starts_at).toLocaleDateString()} - ${new Date(sub.ends_at).toLocaleDateString()}` : 'Date unknown'}
                                             </p>
-                                            <p className="text-sm">${sub.plan_id?.price || 0}/month</p>
+                                            <p className="text-sm">₹{sub.plan_id?.price || 0}/month</p>
                                         </div>
                                         <span className={`inline-block px-2 py-1 text-xs rounded-full ${
                                             sub.status === "active"

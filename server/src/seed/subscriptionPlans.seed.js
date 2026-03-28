@@ -7,21 +7,21 @@ dotenv.config();
 const plans = [
     {
         name: "basic",
-        price: 1,
+        price: 10,
         max_chargers: 2,
         max_ports_per_charger: 4,
         description: "Up to 2 chargers with 4 ports each",
     },
     {
         name: "pro",
-        price: 2,
+        price: 20,
         max_chargers: 5,
         max_ports_per_charger: 4,
         description: "Up to 5 chargers with 4 ports each",
     },
     {
         name: "enterprise",
-        price: 3,
+        price: 30,
         max_chargers: null,
         max_ports_per_charger: null,
         description: "Unlimited chargers with unlimited ports",
