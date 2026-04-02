@@ -10,6 +10,7 @@ import contactRoutes from "./routes/contact.routes.js";
 
 import { ApiResponse } from "./utils/ApiResponse.js";
 import { ApiError } from "./utils/ApiError.js";
+import carModelRoutes from "./routes/carmodel.routes.js";
 
 const app = express();
 
@@ -48,6 +49,7 @@ app.use("/api/v1/cars", carRoutes);
 app.use("/api/v1/chargers", chargerRoutes);
 app.use("/api/v1/subscriptions", subscriptionRoutes);
 app.use("/api/v1/contact", contactRoutes);
+app.use("/api/v1/carmodels", carModelRoutes); // For backward compatibility with old routes);
 
 app.get("/home", (req, res) => {
     res.send("Backend is running");
