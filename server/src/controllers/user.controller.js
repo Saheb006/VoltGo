@@ -3,14 +3,12 @@ import { ApiError } from "../utils/ApiError.js";
 import User from "../models/user.model.js";
 import Car from "../models/car.model.js";
 import {
-    uploadOnCloudinary,
     uploadBufferToCloudinary,
     deleteFromCloudinary,
 } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { getCookieOptions } from "../utils/cookieOptions.js";
 import bcrypt from "bcrypt";
-import fs from "fs/promises";
 import crypto from "crypto";
 import sendEmail from "../utils/sendEmail.js";
 import jwt from "jsonwebtoken";
@@ -400,9 +398,17 @@ const resetPasswordWithOTP = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Email, OTP and new password are required");
     }
 
-    const user = await User.findOne({ email });
+    // Sanitize and validate email to prevent NoSQL injection
+    const sanitizedEmail = email.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    
+    if (!emailRegex.test(sanitizedEmail)) {
+        throw new ApiError(400, "Invalid email format");
+    }
 
-    if (!user || !user.passwordResetOTP) {
+    const user = await User.findOne({ email: sanitizedEmail });
+
+    if (!user?.passwordResetOTP) {
         throw new ApiError(400, "Invalid request");
     }
 
