@@ -1204,6 +1204,30 @@ export default function App() {
 
     const [locationUpdateInterval, setLocationUpdateInterval] = useState<number | null>(null);
 
+    const [routeData, setRouteData] = useState<{
+        start: [number, number];
+        end: [number, number];
+        showRoute: boolean;
+    } | null>(null);
+
+    const clearRoute = () => {
+        setRouteData(null);
+    };
+
+    const showRoute = (start: [number, number], end: [number, number]) => {
+        setRouteData({
+            start,
+            end,
+            showRoute: true
+        });
+    };
+
+    const handleMarkAsReached = () => {
+        // Handle marking as reached (could show success message, complete booking, etc.)
+        alert('Successfully reached the charger!');
+        clearRoute();
+    };
+
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     const [userProfile, setUserProfile] = useState<any>(null);
@@ -1317,11 +1341,11 @@ export default function App() {
 
         const requestOnce = () => {
             navigator.geolocation.getCurrentPosition(onPosition, onError, {
-                enableHighAccuracy: true,
+                enableHighAccuracy: false,
 
                 timeout: 20000,
 
-                maximumAge: 0,
+                maximumAge: 60000,
             });
         };
 
@@ -1354,11 +1378,11 @@ export default function App() {
         }, 4000);
 
         watchId = navigator.geolocation.watchPosition(onPosition, onError, {
-            enableHighAccuracy: true,
+            enableHighAccuracy: false,
 
             timeout: 20000,
 
-            maximumAge: 0,
+            maximumAge: 60000,
         });
 
         // If high-accuracy GPS doesn't resolve quickly (common indoors), fall back to a coarse fix
@@ -1447,9 +1471,9 @@ export default function App() {
                         // Don't throw error, just log and continue
                     },
                     {
-                        enableHighAccuracy: true,
-                        maximumAge: 1000, // Accept location up to 1 second old
-                        timeout: 8000 // Increased timeout to 8 seconds
+                        enableHighAccuracy: false,
+                        maximumAge: 60000, // Accept location up to 1 minute old
+                        timeout: 15000 // Increased timeout to 15 seconds
                     }
                 );
             }
@@ -1625,27 +1649,28 @@ export default function App() {
                         {/* Map Container */}
 
                         <div className="relative h-screen">
-                            {/* Search */}
+                            {/* Search - hide when route is active */}
+                            {!routeData?.showRoute && (
+                                <div
+                                    className="absolute top-4 left-4 z-[1000] animate-in fade-in slide-in-from-top-2 duration-500"
+                                    style={{ width: "320px" }}
+                                >
+                                    <div className="relative">
+                                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 z-10" />
 
-                            <div
-                                className="absolute top-4 left-4 z-[1000] animate-in fade-in slide-in-from-top-2 duration-500"
-                                style={{ width: "320px" }}
-                            >
-                                <div className="relative">
-                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 z-10" />
-
-                                    <input
-                                        ref={searchInputRef}
-                                        type="text"
-                                        placeholder={searchPlaceholder}
-                                        className={`w-full pl-12 pr-4 py-3 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
-                                            isDarkMode
-                                                ? "bg-gray-800/90 border-gray-700 text-white placeholder-gray-400 backdrop-blur-sm"
-                                                : "bg-white/90 border-gray-200 text-gray-900 backdrop-blur-sm"
-                                        }`}
-                                    />
+                                        <input
+                                            ref={searchInputRef}
+                                            type="text"
+                                            placeholder={searchPlaceholder}
+                                            className={`w-full pl-12 pr-4 py-3 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+                                                isDarkMode
+                                                    ? "bg-gray-800/90 border-gray-700 text-white placeholder-gray-400 backdrop-blur-sm"
+                                                    : "bg-white/90 border-gray-200 text-gray-900 backdrop-blur-sm"
+                                            }`}
+                                        />
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             <MapComponent
                                 center={userLocation}
@@ -1662,24 +1687,28 @@ export default function App() {
                                 }
                                 onStationSelect={handleStationSelect}
                                 isDarkMode={isDarkMode}
+                                routeData={routeData}
+                                onClearRoute={clearRoute}
+                                onMarkAsReached={handleMarkAsReached}
                             />
 
-                            {/* Filter Button */}
-                            <div className="absolute top-4 left-[340px] z-[1000] animate-in fade-in slide-in-from-top-2 duration-500">
-                                <button
-                                    className={`p-3 rounded-full transition-colors ${
-                                        isDarkMode
-                                            ? "bg-gray-800/90 text-gray-200 hover:bg-gray-700 backdrop-blur-sm"
-                                            : "bg-white/90 text-gray-600 hover:bg-gray-100 backdrop-blur-sm"
-                                    }`}
-                                >
-                                    <Filter className="w-5 h-5" />
-                                </button>
-                            </div>
+                            {/* Filter Button - hide when route is active */}
+                            {!routeData?.showRoute && (
+                                <div className="absolute top-4 left-[340px] z-[1000] animate-in fade-in slide-in-from-top-2 duration-500">
+                                    <button
+                                        className={`p-3 rounded-full transition-colors ${
+                                            isDarkMode
+                                                ? "bg-gray-800/90 text-gray-200 hover:bg-gray-700 backdrop-blur-sm"
+                                                : "bg-white/90 text-gray-600 hover:bg-gray-100 backdrop-blur-sm"
+                                        }`}
+                                    >
+                                        <Filter className="w-5 h-5" />
+                                    </button>
+                                </div>
+                            )}
 
-                            {/* Distance selector */}
-
-                            {showChargers && (
+                            {/* Distance selector - hide when route is active */}
+                            {showChargers && !routeData?.showRoute && (
                                 <div className="absolute top-20 left-4 z-[1000] animate-in fade-in slide-in-from-top-2 duration-500">
                                     <Select
                                         value={selectedDistance}
@@ -1714,8 +1743,8 @@ export default function App() {
                                 </div>
                             )}
 
-                            {/* Station List - Horizontal Scroll - Only for vehicle owners */}
-                            {userRole === 'vehicle_owner' && showChargers && (
+                            {/* Station List - Horizontal Scroll - Only for vehicle owners - hide when route is active */}
+                            {userRole === 'vehicle_owner' && showChargers && !routeData?.showRoute && (
                                 <div className="absolute bottom-0 left-0 w-full z-[1000] p-4 overflow-x-auto flex space-x-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
                                     {stations.length === 0 ? (
                                         <div className="flex-none w-80">
@@ -1755,8 +1784,8 @@ export default function App() {
                                 </div>
                             )}
 
-                            {/* Car/Charger Selection - Role based */}
-                            {userRole === 'vehicle_owner' && (
+                            {/* Car/Charger Selection - Role based - hide when route is active */}
+                            {userRole === 'vehicle_owner' && !routeData?.showRoute && (
                                 <div className="absolute bottom-40 left-4 z-[1000]">
                                     <div
                                         className={`flex flex-col items-center justify-center w-20 h-20 rounded-lg shadow-lg border cursor-pointer transition-all duration-200 hover:scale-105 ${
@@ -1815,14 +1844,17 @@ export default function App() {
                                     stationName={selectedCharger.name}
                                     connectors={selectedCharger.connectors || []}
                                     isLoading={isLoadingPorts}
-                                    userRole="user"
                                     chargerId={selectedCharger.id.toString()}
                                     selectedCar={selectedCar}
+                                    userLocation={userLocation}
+                                    chargerLocation={[selectedCharger.lat, selectedCharger.lng]}
+                                    chargerAddress={selectedCharger.address}
+                                    onShowRoute={showRoute}
                                 />
                             )}
 
-                            {/* Find Chargers Button - only show when chargers not found - Only for vehicle owners */}
-                            {userRole === 'vehicle_owner' && !showChargers && (
+                            {/* Filter Button - only show when chargers not found and no route is active - Only for vehicle owners */}
+                            {userRole === 'vehicle_owner' && !showChargers && !routeData?.showRoute && (
                                 <div className="absolute bottom-4 left-4 right-4 z-[1000] space-y-2">
                                     {/* Location indicator */}
 
@@ -1901,7 +1933,7 @@ export default function App() {
                 {currentPage === "home" && (
                     <>
 
-                        {userRole === 'charger_owner' && !showMyChargersModal && (
+                        {userRole === 'charger_owner' && !showMyChargersModal && !routeData?.showRoute && (
                             <div className="fixed bottom-48 left-4 z-[10001]">
                                 <div
                                     className={`flex flex-col items-center justify-center w-20 h-20 rounded-lg shadow-lg border cursor-pointer ${
@@ -1944,9 +1976,12 @@ export default function App() {
                                 stationName={selectedCharger.name}
                                 connectors={selectedCharger.connectors || []}
                                 isLoading={isLoadingPorts}
-                                userRole="user"
                                 chargerId={selectedCharger.id.toString()}
                                 selectedCar={selectedCar}
+                                userLocation={userLocation}
+                                chargerLocation={[selectedCharger.lat, selectedCharger.lng]}
+                                chargerAddress={selectedCharger.address}
+                                onShowRoute={showRoute}
                             />
                         )}
 
@@ -1988,11 +2023,11 @@ export default function App() {
                     />
                 ) : null}
 
-                {/* Bottom Navigation - Fixed at bottom like Uber */}
-
-                <nav
-                    className={`fixed bottom-0 left-0 right-0 border-t shadow-lg transition-colors duration-300 ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}
-                >
+                {/* Bottom Navigation - Fixed at bottom like Uber - hide when route is active */}
+                {!routeData?.showRoute && (
+                    <nav
+                        className={`fixed bottom-0 left-0 right-0 border-t shadow-lg transition-colors duration-300 ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}
+                    >
                     <div className="max-w-2xl mx-auto px-4 py-2 flex items-center justify-around">
                         <button
                             onClick={() => updatePage("home")}
@@ -2049,8 +2084,9 @@ export default function App() {
                         </button>
                     </div>
                 </nav>
+                )}
             </div>
-        ) // Added closing parenthesis here
+        )
     );
 }
 

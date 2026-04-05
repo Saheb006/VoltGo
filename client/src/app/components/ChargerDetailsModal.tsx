@@ -1,16 +1,8 @@
 import { X } from "lucide-react";
 import { Zap, Plug, BatteryCharging, Cable, Car } from "lucide-react";
-import React, { memo, useState } from "react";
+import { memo, useState } from "react";
 import { ConnectorBackend } from "../../types";
 import { bookCharger } from "../../services/api";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "./ui/dialog";
 
 interface ChargerDetailsModalProps {
   isOpen: boolean;
@@ -19,9 +11,12 @@ interface ChargerDetailsModalProps {
   connectors: ConnectorBackend[];
   stationName: string;
   isLoading?: boolean;
-  userRole: string;
   chargerId: string;
   selectedCar: string;
+  userLocation?: [number, number];
+  chargerLocation?: [number, number];
+  chargerAddress?: string;
+  onShowRoute?: (start: [number, number], end: [number, number]) => void;
 }
 
 function ChargerDetailsModalComponent({
@@ -31,9 +26,11 @@ function ChargerDetailsModalComponent({
   connectors,
   stationName,
   isLoading = false,
-  userRole,
   chargerId,
   selectedCar,
+  userLocation = [28.6139, 77.209], // Default to Delhi
+  chargerLocation = [28.6139, 77.209], // Default to Delhi
+  onShowRoute,
 }: ChargerDetailsModalProps) {
   const [bookingMessage, setBookingMessage] = useState<string | null>(null);
   const [isBooking, setIsBooking] = useState(false);
@@ -63,7 +60,7 @@ function ChargerDetailsModalComponent({
 
   // Map connector types to their respective icons
   const getConnectorIcon = (type: string) => {
-    const iconMap: Record<string, JSX.Element> = {
+    const iconMap: Record<string, React.ReactElement> = {
       'Type 1': <Plug className="w-6 h-6" style={{color: '#f97316'}} />,
       'Type 2': <Plug className="w-6 h-6" style={{color: '#16a34a'}} />,
       'CCS1': <Zap className="w-6 h-6" style={{color: '#2563eb'}} />,
@@ -83,7 +80,6 @@ function ChargerDetailsModalComponent({
       return;
     }
 
-    // Clear previous messages
     setBookingMessage(null);
     setAuthError(null);
     setIsBooking(true);
@@ -96,27 +92,25 @@ function ChargerDetailsModalComponent({
       );
 
       if (response.success) {
-        setBookingMessage('Booking successful!');
-        // Close the modal after a short delay
+        setBookingMessage('Booking successful! Showing route...');
+        
+        // Show route on main map after a short delay
         setTimeout(() => {
+          onShowRoute?.(userLocation, chargerLocation);
+          setBookConfirm(null);
           handleClose();
-        }, 2000);
+        }, 1500);
       } else {
         // Handle specific error cases
         if (response.error?.includes('authenticated') || response.error?.includes('login') || response.error?.includes('401')) {
           setAuthError('Please log in to book a charger');
         } else {
-          setBookingMessage(response.error || 'Failed to book charger');
+          setBookingMessage('Failed to book charger. Please try again.');
         }
       }
     } catch (error) {
       console.error('Booking error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'An error occurred';
-      if (errorMessage.includes('401') || errorMessage.includes('unauthorized') || errorMessage.includes('not authenticated')) {
-        setAuthError('Session expired. Please log in again.');
-      } else {
-        setBookingMessage(errorMessage);
-      }
+      setBookingMessage('Failed to book charger. Please try again.');
     } finally {
       setIsBooking(false);
     }
@@ -135,12 +129,13 @@ function ChargerDetailsModalComponent({
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" onClick={handleClose}>
-      <div 
-        className={`relative w-full max-w-md rounded-xl p-6 shadow-2xl pointer-events-auto ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}
-        onClick={(e) => e.stopPropagation()}
-        style={{ marginTop: '20vh' }}
-      >
+    <>
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" onClick={handleClose}>
+        <div 
+          className={`relative w-full max-w-md rounded-xl p-6 shadow-2xl pointer-events-auto ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}
+          onClick={(e) => e.stopPropagation()}
+          style={{ marginTop: '20vh' }}
+        >
         {/* Close button */}
         <button
           onClick={handleClose}
@@ -305,7 +300,8 @@ function ChargerDetailsModalComponent({
         )}
       </div>
     </div>
-  );
+  </>
+);
 }
 
 export const ChargerDetailsModal = memo(ChargerDetailsModalComponent);
