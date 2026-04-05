@@ -2,17 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-// Fix for default marker icons in Vite
-const defaultIcon = new L.Icon({
-    iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
-    iconRetinaUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png",
-    shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41],
-});
-
 interface MapProps {
     center?: [number, number];
     zoom?: number;
@@ -313,7 +302,10 @@ export default function Map({
                 }
 
                 // Get API key
-                const apiKey = import.meta.env.VITE_ORS_API_KEY || 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImYyMmE2MzdkMTg1NjRiMzk5MDhkNzI5M2JhNTNmMmM1IiwiaCI6Im11cm11cjY0In0=';
+                const apiKey = import.meta.env.VITE_ORS_API_KEY;
+                if (!apiKey) {
+                    throw new Error('OpenRouteService API key not found in environment variables');
+                }
                 
                 // Call OpenRouteService API directly
                 const response = await fetch(
