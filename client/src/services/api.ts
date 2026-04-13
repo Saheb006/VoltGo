@@ -40,6 +40,14 @@ export interface UserProfile {
     role: string;
 }
 
+export interface CarModel {
+    _id: string;
+    companyName: string;
+    modelName: string;
+    slug: string;
+    imageUrl: string;
+}
+
 // Get authentication token from cookies
 
 const getAuthToken = (): string | null => {
@@ -960,4 +968,20 @@ export const listMySubscriptions = async (): Promise<any[]> => {
     const data = await response.json();
 
     return data.data || [];
+};
+
+// Get all car models from database
+export const getAllCarModels = async (): Promise<CarModel[]> => {
+    const response = await fetch(`${API_BASE_URL}/api/v1/carmodels/all`, {
+        method: "GET",
+        credentials: "include",
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to fetch car models");
+    }
+
+    const data = await response.json();
+    return data || [];
 };

@@ -67,10 +67,7 @@ import {
     changePassword,
     updateAvatar,
     fetchChargerPorts,
-    type UserProfile,
 } from "../services/api";
-
-import { paymentOptions, distanceOptions} from "../constants/options";
 
 function UpdateAccountModal({
     isOpen,
@@ -1127,8 +1124,6 @@ function EditProfilePage({
 export default function App() {
     const [selectedCar, setSelectedCar] = useState("tata-nexon");
 
-    const [selectedPayment, setSelectedPayment] = useState("google-pay");
-
     const [showVehiclesModal, setShowVehiclesModal] = useState(false);
 
     const [showChargers, setShowChargers] = useState(false);
@@ -1246,8 +1241,6 @@ export default function App() {
     });
 
     const [userVehicles, setUserVehicles] = useState<any[]>([]);
-
-    const [userChargers, setUserChargers] = useState<Station[]>([]);
 
     const [showMyChargersModal, setShowMyChargersModal] = useState(false);
 
@@ -1798,7 +1791,7 @@ export default function App() {
                                         <Car className="w-6 h-6 mb-0" />
                                         <span className="text-xs font-medium text-center leading-tight">
                                             {(() => {
-                                                //check user vehicles
+                                                // Check user vehicles first
                                                 if (userVehicles.length > 0) {
                                                     const generateCarValue = (vehicle: any) => {
                                                         let model = vehicle.model.toLowerCase();
@@ -1808,6 +1801,14 @@ export default function App() {
                                                     };
                                                     const selectedVehicle = userVehicles.find(vehicle => generateCarValue(vehicle) === selectedCar);
                                                     if (selectedVehicle) return `${selectedVehicle.company} ${selectedVehicle.model}`;
+                                                }
+
+                                                // If not found in user vehicles, format from car value (database cars)
+                                                if (selectedCar && selectedCar.includes('-')) {
+                                                    const [company, ...modelParts] = selectedCar.split('-');
+                                                    const model = modelParts.join(' ').replace(/\b\w/g, l => l.toUpperCase());
+                                                    const companyFormatted = company.charAt(0).toUpperCase() + company.slice(1);
+                                                    return `${companyFormatted} ${model}`;
                                                 }
 
                                                 // Fallback to "Car" if nothing matches

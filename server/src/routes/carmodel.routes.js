@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { addCar } from "../controllers/carmodel.controller.js";
+import { addCar, getAllCars } from "../controllers/carmodel.controller.js";
 
 const router = express.Router();
 
@@ -21,5 +21,6 @@ const upload = multer({
 });
 
 router.post("/admin/add-car", upload.single("image"), addCar);
+router.get("/all", getAllCars);
 
 export default router;

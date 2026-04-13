@@ -1,8 +1,9 @@
 import { X } from "lucide-react";
 import { Zap, Plug, BatteryCharging, Cable, Car } from "lucide-react";
-import { memo, useState } from "react";
+import { memo, useState, useEffect } from "react";
 import { ConnectorBackend } from "../../types";
 import { bookCharger } from "../../services/api";
+import { apiClient } from "../../services/apiClient";
 
 interface ChargerDetailsModalProps {
   isOpen: boolean;
@@ -36,6 +37,51 @@ function ChargerDetailsModalComponent({
   const [isBooking, setIsBooking] = useState(false);
   const [bookConfirm, setBookConfirm] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [userVehicles, setUserVehicles] = useState<any[]>([]);
+
+  // Format car value to readable name
+  const formatCarName = (carValue: string) => {
+    console.log('Formatting car value:', carValue); // Debug log
+    
+    // Check if it's from user vehicles first
+    const selectedVehicle = userVehicles.find(vehicle => {
+      let model = vehicle.model.toLowerCase();
+      model = model.replace(/ev/gi, '').trim();
+      model = model.replace(/\s+/g, '-');
+      return `${vehicle.company.toLowerCase()}-${model}` === carValue;
+    });
+    
+    if (selectedVehicle) {
+      console.log('Found in user vehicles:', selectedVehicle); // Debug log
+      return `${selectedVehicle.company} ${selectedVehicle.model}`;
+    }
+    
+    // If not found in user vehicles, format from the car value
+    if (carValue && carValue.includes('-')) {
+      const [company, ...modelParts] = carValue.split('-');
+      const model = modelParts.join(' ').replace(/\b\w/g, l => l.toUpperCase());
+      const companyFormatted = company.charAt(0).toUpperCase() + company.slice(1);
+      const formattedName = `${companyFormatted} ${model}`;
+      console.log('Formatted from car value:', formattedName); // Debug log
+      return formattedName;
+    }
+    
+    console.log('Using fallback'); // Debug log
+    return carValue || 'Unknown Car';
+  };
+
+  // Fetch user vehicles on mount
+  useEffect(() => {
+    const fetchUserVehicles = async () => {
+      try {
+        const response = await apiClient.get('/api/v1/cars/my');
+        setUserVehicles(response.data.data || []);
+      } catch (error) {
+        console.error('Error fetching user vehicles:', error);
+      }
+    };
+    fetchUserVehicles();
+  }, []);
 
   if (!isOpen) return null;
 
@@ -239,7 +285,7 @@ function ChargerDetailsModalComponent({
                       <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                         Book {connectors.find(c => c.id === bookConfirm)?.connector_type || 'this port'} 
                         ({connectors.find(c => c.id === bookConfirm)?.max_power_kw || '--'}kW) - 
-                        ${connectors.find(c => c.id === bookConfirm)?.price_per_kwh || '--'}/kWh for your {selectedCar}?
+                        ${connectors.find(c => c.id === bookConfirm)?.price_per_kwh || '--'}/kWh for your {formatCarName(selectedCar)}?
                       </p>
                     </div>
                   </div>

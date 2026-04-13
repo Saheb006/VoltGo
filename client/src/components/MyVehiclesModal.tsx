@@ -7,6 +7,8 @@ import {
     DialogDescription,
 } from "../app/components/ui/dialog";
 import { apiClient } from "../services/apiClient";
+import { CarModelSelector } from "./CarModelSelector";
+import { type CarModel } from "../services/api";
 
 interface Vehicle {
     _id: string;
@@ -64,6 +66,7 @@ export function MyVehiclesModal({
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [showCarModelSelector] = useState(true); // Always show car models
 
     useEffect(() => {
         if (isOpen) {
@@ -165,6 +168,17 @@ export function MyVehiclesModal({
         resetForm();
     };
 
+    const handleSelectCarModel = (carModel: CarModel) => {
+        // Create a car value similar to how handleSelectVehicle works
+        let model = carModel.modelName.toLowerCase();
+        model = model.replace(/ev/gi, '').trim(); // remove 'ev' case insensitive
+        model = model.replace(/\s+/g, '-'); // replace spaces with -
+        const carValue = `${carModel.companyName.toLowerCase()}-${model}`;
+        
+        onSelectCar(carValue);
+        onClose();
+    };
+
     const handleFormChange = (field: keyof NewCarForm, value: string) => {
         setNewCar(prev => ({ ...prev, [field]: value }));
     };
@@ -239,12 +253,12 @@ export function MyVehiclesModal({
                                 isDarkMode ? "text-white" : "text-gray-900"
                             }`}
                         >
-                            {showAddCarForm ? "Add New Vehicle" : showUpdateCarForm ? "Update Vehicle" : "My Vehicles"}
+                            {showAddCarForm ? "Add New Vehicle" : showUpdateCarForm ? "Update Vehicle" : "Select Your Vehicle"}
                         </h2>
                     </div>
 
                     {/* Content */}
-                    <div className="px-3 pb-2 max-h-96 overflow-y-auto">
+                    <div className="px-3 pb-2 h-80 overflow-y-auto">
                         {loading ? (
                             <div className="flex items-center justify-center py-8">
                                 <div className={`animate-spin rounded-full h-8 w-8 border-b-2 ${
@@ -431,8 +445,17 @@ export function MyVehiclesModal({
                                     </select>
                                 </div>
                             </div>
+                        ) : showCarModelSelector ? (
+                            /* Car Model Selector */
+                            <CarModelSelector
+                                isOpen={true}
+                                onClose={() => {}}
+                                onSelectCar={handleSelectCarModel}
+                                isDarkMode={isDarkMode}
+                                currentSelectedCar={currentSelectedCar}
+                            />
                         ) : (
-                            /* Vehicle List */
+                            /* Vehicle List - Fallback */
                             <div className="space-y-2">
                                 {vehicles.length === 0 ? (
                                     <div className="text-center py-8">
@@ -549,7 +572,7 @@ export function MyVehiclesModal({
                                             : "text-rose-600 hover:text-rose-700 hover:bg-rose-50"
                                     }`}
                                 >
-                                    Add New
+                                    Add Custom
                                 </button>
                                 <button
                                     onClick={handleApply}

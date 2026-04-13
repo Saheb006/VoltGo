@@ -73,3 +73,14 @@ export const addCar = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+export const getAllCars = async (req, res) => {
+  try {
+    const cars = await CarModel.find({}).select('companyName modelName imageUrl slug maxPowerKW maxBatteryCapacity');
+    res.status(200).json(cars);
+  } catch (err) {
+    console.error("Get Cars Error:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
+

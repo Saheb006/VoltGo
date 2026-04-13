@@ -3,6 +3,7 @@ import React, { memo, useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-routing-machine";
+import { apiClient } from "../../services/apiClient";
 
 interface RouteModalProps {
   isOpen: boolean;
@@ -41,6 +42,51 @@ function RouteModalComponent({
     duration: string;
   } | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
+  const [userVehicles, setUserVehicles] = useState<any[]>([]);
+
+  // Format car value to readable name
+  const formatCarName = (carValue: string) => {
+    console.log('RouteModal - Formatting car value:', carValue); // Debug log
+    
+    // Check if it's from user vehicles first
+    const selectedVehicle = userVehicles.find(vehicle => {
+      let model = vehicle.model.toLowerCase();
+      model = model.replace(/ev/gi, '').trim();
+      model = model.replace(/\s+/g, '-');
+      return `${vehicle.company.toLowerCase()}-${model}` === carValue;
+    });
+    
+    if (selectedVehicle) {
+      console.log('RouteModal - Found in user vehicles:', selectedVehicle); // Debug log
+      return `${selectedVehicle.company} ${selectedVehicle.model}`;
+    }
+    
+    // If not found in user vehicles, format from the car value
+    if (carValue && carValue.includes('-')) {
+      const [company, ...modelParts] = carValue.split('-');
+      const model = modelParts.join(' ').replace(/\b\w/g, l => l.toUpperCase());
+      const companyFormatted = company.charAt(0).toUpperCase() + company.slice(1);
+      const formattedName = `${companyFormatted} ${model}`;
+      console.log('RouteModal - Formatted from car value:', formattedName); // Debug log
+      return formattedName;
+    }
+    
+    console.log('RouteModal - Using fallback'); // Debug log
+    return carValue || 'Unknown Car';
+  };
+
+  // Fetch user vehicles on mount
+  useEffect(() => {
+    const fetchUserVehicles = async () => {
+      try {
+        const response = await apiClient.get('/api/v1/cars/my');
+        setUserVehicles(response.data.data || []);
+      } catch (error) {
+        console.error('Error fetching user vehicles:', error);
+      }
+    };
+    fetchUserVehicles();
+  }, []);
 
   if (!isOpen) return null;
 
@@ -279,7 +325,7 @@ function RouteModalComponent({
             <div className="flex items-center gap-3">
               <Car className="w-4 h-4 text-gray-500" />
               <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                Vehicle: {carModel}
+                Vehicle: {formatCarName(carModel)}
               </span>
             </div>
           </div>
