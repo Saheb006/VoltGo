@@ -6,12 +6,12 @@ import { authRateLimiter } from "../middlewares/rateLimit.middleware.js";
 const router = express.Router();
 
 // Create or update activity session
-router.post('/', verifyJWT, authRateLimiter, createActivitySession);
+router.post('/', authRateLimiter, verifyJWT, createActivitySession);
 
 // Get user's activity sessions
-router.get('/', verifyJWT, authRateLimiter, getUserActivitySessions);
+router.get('/', authRateLimiter, verifyJWT, getUserActivitySessions);
 
 // Update activity session
-router.put('/:sessionId', verifyJWT, authRateLimiter, updateActivitySession);
+router.put('/:sessionId', authRateLimiter, verifyJWT, updateActivitySession);
 
 export default router;

@@ -12,18 +12,18 @@ import { authRateLimiter } from "../middlewares/rateLimit.middleware.js";
 const router = Router();
 
 // create a new car
-router.post("/postcar", verifyJWT, authRateLimiter, postCar);
+router.post("/postcar", authRateLimiter, verifyJWT, postCar);
 
 // get all cars of logged-in user
-router.get("/my", verifyJWT, authRateLimiter, listMyCars);
+router.get("/my", authRateLimiter, verifyJWT, listMyCars);
 
 // get single car by id
-router.get("/:carId", verifyJWT, authRateLimiter, getCarById);
+router.get("/:carId", authRateLimiter, verifyJWT, getCarById);
 
 // update car
-router.patch("/:carId", verifyJWT, authRateLimiter, updateCar);
+router.patch("/:carId", authRateLimiter, verifyJWT, updateCar);
 
 // delete car
-router.delete("/:carId", verifyJWT, authRateLimiter, deleteCar); //everything tested
+router.delete("/:carId", authRateLimiter, verifyJWT, deleteCar); //everything tested
 
 export default router;

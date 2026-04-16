@@ -16,23 +16,23 @@ const router = Router({ mergeParams: true });
 // create port under charger
 router.post(
     "/",
-    verifyJWT,
     authRateLimiter,
+    verifyJWT,
     checkActiveSubscription, // 🔒 must have active plan
     checkPortLimitOnly, // 🔑 enforces max_ports_per_charger
     createChargerPort
 );
 
 // list ports of charger
-router.get("/", verifyJWT, authRateLimiter, listChargerPorts);
+router.get("/", authRateLimiter, verifyJWT, listChargerPorts);
 
 // update port details
-router.patch("/:portId", verifyJWT, authRateLimiter, updateChargerPort);
+router.patch("/:portId", authRateLimiter, verifyJWT, updateChargerPort);
 
 // update port status
-router.patch("/:portId/status", verifyJWT, authRateLimiter, updatePortStatus);
+router.patch("/:portId/status", authRateLimiter, verifyJWT, updatePortStatus);
 
 // delete port
-router.delete("/:portId", verifyJWT, authRateLimiter, deleteChargerPort);
+router.delete("/:portId", authRateLimiter, verifyJWT, deleteChargerPort);
 
 export default router;

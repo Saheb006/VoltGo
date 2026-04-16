@@ -24,8 +24,8 @@ router.use("/:chargerId/ports", chargerPortRoutes);
 // create charger
 router.post(
     "/",
-    verifyJWT,
     authRateLimiter,
+    verifyJWT,
     checkActiveSubscription,
     checkChargerLimit,
     upload.single("image"), // 🔑 must match req.file usage
@@ -35,25 +35,25 @@ router.post(
 // update charger
 router.patch(
     "/:chargerId",
-    verifyJWT,
     authRateLimiter,
+    verifyJWT,
     upload.single("image"), // optional image update
     updateCharger
 );
 
 // delete charger
-router.delete("/:chargerId", verifyJWT, authRateLimiter, deleteCharger);
+router.delete("/:chargerId", authRateLimiter, verifyJWT, deleteCharger);
 
 // list chargers of logged-in charger owner
-router.get("/my", verifyJWT, authRateLimiter, listMyChargers);
+router.get("/my", authRateLimiter, verifyJWT, listMyChargers);
 
 // nearby chargers (vehicle owners only)
-router.get("/nearby", verifyJWT, authRateLimiter, listNearbyChargers);
+router.get("/nearby", authRateLimiter, verifyJWT, listNearbyChargers);
 
 // get charger by id
-router.get("/:chargerId", verifyJWT, authRateLimiter, getChargerById);
+router.get("/:chargerId", authRateLimiter, verifyJWT, getChargerById);
 
 // toggle charger status (active ↔ inactive)
-router.patch("/:chargerId/toggle-status", verifyJWT, authRateLimiter, toggleChargerStatus);
+router.patch("/:chargerId/toggle-status", authRateLimiter, verifyJWT, toggleChargerStatus);
 
 export default router;

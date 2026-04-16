@@ -10,9 +10,9 @@ import { strictRateLimiter, authRateLimiter, generalRateLimiter } from "../middl
 
 const router = Router();
 
-router.post("/start", verifyJWT, strictRateLimiter, startSubscription);
-router.get("/me", verifyJWT, authRateLimiter, getMySubscription);
-router.get("/history", verifyJWT, authRateLimiter, listMySubscriptions); //tested all
+router.post("/start", strictRateLimiter, verifyJWT, startSubscription);
+router.get("/me", authRateLimiter, verifyJWT, getMySubscription);
+router.get("/history", authRateLimiter, verifyJWT, listMySubscriptions); //tested all
 router.get("/plans", generalRateLimiter, getSubscriptionPlans); // Make plans public - no auth required
 
 export default router;

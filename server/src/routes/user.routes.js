@@ -26,18 +26,19 @@ router
 
 router.route("/login").post(strictRateLimiter, loginUser);
 
-router.route("/logout").post(verifyJWT, logoutUser);
+router.route("/logout").post(authRateLimiter, verifyJWT, logoutUser);
 
-router.route("/refresh-token").post(refreshJWTtocken);
+router.route("/refresh-token").post(strictRateLimiter, refreshJWTtocken);
 
-router.get("/me", verifyJWT, getUser);
+router.get("/me", authRateLimiter, verifyJWT, getUser);
 
-router.post("/change-password", verifyJWT, changePassword);
+router.post("/change-password", strictRateLimiter, verifyJWT, changePassword);
 
-router.post("/update-account", verifyJWT, updateAccountDetails);
+router.post("/update-account", authRateLimiter, verifyJWT, updateAccountDetails);
 
 router.post(
     "/update-avatar",
+    authRateLimiter,
     verifyJWT,
     upload.single("avatar"),
     updateUserAvatar
@@ -47,12 +48,12 @@ router.post("/forgot-password", strictRateLimiter, forgotPassword); //not tested
 
 router.post("/reset-password-otp", strictRateLimiter, resetPasswordWithOTP); //not tested
 
-router.post("/reset-password", verifyJWT, authRateLimiter, resetPasswordInsideApp);
+router.post("/reset-password", authRateLimiter, verifyJWT, resetPasswordInsideApp);
 
-router.delete("/delete-account", verifyJWT, authRateLimiter, deleteAccount);
+router.delete("/delete-account", authRateLimiter, verifyJWT, deleteAccount);
 
-router.post("/select-active-car", verifyJWT, authRateLimiter, selectActiveCar);
+router.post("/select-active-car", authRateLimiter, verifyJWT, selectActiveCar);
 
-router.get("/get-active-car", verifyJWT, authRateLimiter, getActiveCar);
+router.get("/get-active-car", authRateLimiter, verifyJWT, getActiveCar);
 
 export default router;
