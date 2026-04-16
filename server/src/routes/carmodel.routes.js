@@ -1,6 +1,7 @@
 import express from "express";
 import multer from "multer";
 import { addCar, getAllCars } from "../controllers/carmodel.controller.js";
+import { strictRateLimiter, generalRateLimiter } from "../middlewares/rateLimit.middleware.js";
 
 const router = express.Router();
 
@@ -20,7 +21,7 @@ const upload = multer({
   fileFilter,
 });
 
-router.post("/admin/add-car", upload.single("image"), addCar);
-router.get("/all", getAllCars);
+router.post("/admin/add-car", strictRateLimiter, upload.single("image"), addCar);
+router.get("/all", generalRateLimiter, getAllCars);
 
 export default router;
