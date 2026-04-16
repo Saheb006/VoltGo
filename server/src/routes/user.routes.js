@@ -21,9 +21,9 @@ const router = Router();
 
 router
     .route("/register")
-    .post(upload.fields([{ name: "avatar", maxCount: 1 }]), registerUser);
+    .post(strictRateLimiter, upload.fields([{ name: "avatar", maxCount: 1 }]), registerUser);
 
-router.route("/login").post(loginUser);
+router.route("/login").post(strictRateLimiter, loginUser);
 
 router.route("/logout").post(verifyJWT, logoutUser);
 
@@ -42,16 +42,16 @@ router.post(
     updateUserAvatar
 ); //tested till this
 
-router.post("/forgot-password", forgotPassword); //not tested
+router.post("/forgot-password", strictRateLimiter, forgotPassword); //not tested
 
-router.post("/reset-password-otp", resetPasswordWithOTP); //not tested
+router.post("/reset-password-otp", strictRateLimiter, resetPasswordWithOTP); //not tested
 
-router.post("/reset-password", verifyJWT, resetPasswordInsideApp);
+router.post("/reset-password", verifyJWT, authRateLimiter, resetPasswordInsideApp);
 
-router.delete("/delete-account", verifyJWT, deleteAccount);
+router.delete("/delete-account", verifyJWT, authRateLimiter, deleteAccount);
 
-router.post("/select-active-car", verifyJWT, selectActiveCar);
+router.post("/select-active-car", verifyJWT, authRateLimiter, selectActiveCar);
 
-router.get("/get-active-car", verifyJWT, getActiveCar);
+router.get("/get-active-car", verifyJWT, authRateLimiter, getActiveCar);
 
 export default router;
