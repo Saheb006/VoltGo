@@ -17,6 +17,7 @@ import {
     getActiveCar,
 } from "../controllers/user.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
+import { strictRateLimiter, authRateLimiter } from "../middlewares/rateLimit.middleware.js";
 const router = Router();
 
 router
