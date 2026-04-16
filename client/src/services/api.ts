@@ -985,3 +985,79 @@ export const getAllCarModels = async (): Promise<CarModel[]> => {
     const data = await response.json();
     return data || [];
 };
+
+// Activity Session API functions
+export const createActivitySession = async (sessionData: {
+    chargerName: string;
+    chargerImage?: string;
+    carModel: string;
+    portType?: string;
+    chargerId: string;
+    status?: string;
+    endTime?: string;
+    duration?: number;
+}): Promise<any> => {
+    const token = getAuthToken();
+    const response = await fetch(`${API_BASE_URL}/api/v1/activity-sessions`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(sessionData),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to create activity session");
+    }
+
+    const data = await response.json();
+    return data;
+};
+
+export const fetchActivitySessions = async (): Promise<any[]> => {
+    const token = getAuthToken();
+    const response = await fetch(`${API_BASE_URL}/api/v1/activity-sessions`, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to fetch activity sessions");
+    }
+
+    const data = await response.json();
+    return data.data || [];
+};
+
+export const updateActivitySession = async (sessionId: string, updateData: {
+    endTime?: string;
+    duration?: number;
+    status?: string;
+}): Promise<any> => {
+    const token = getAuthToken();
+    const response = await fetch(`${API_BASE_URL}/api/v1/activity-sessions/${sessionId}`, {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(updateData),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to update activity session");
+    }
+
+    const data = await response.json();
+    return data;
+};

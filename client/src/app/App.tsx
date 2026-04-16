@@ -26,6 +26,7 @@ import LoginPage from "./components/LoginPage";
 import MapComponent from "./components/Map";
 import { StationCard } from "./components/StationCard";
 import { ChargerDetailsModal } from "./components/ChargerDetailsModal";
+import { ActivityPage } from "./components/ActivityPage";
 import { MyVehiclesModal } from "../components/MyVehiclesModal";
 import { MyChargersModal } from "./components/MyChargersModal";
 import SubscriptionPage from "./SubscriptionPage";
@@ -68,6 +69,7 @@ import {
     updateAvatar,
     fetchChargerPorts,
 } from "../services/api";
+import { createActivitySession, fetchActivitySessions, updateActivitySession } from "../services/api";
 
 function UpdateAccountModal({
     isOpen,
@@ -1128,7 +1130,7 @@ export default function App() {
 
     const [showChargers, setShowChargers] = useState(false);
 
-    const [currentPage, setCurrentPage] = useState<"landing" | "login" | "home" | "account" | "edit-profile" | "subscription" | "about" | "privacy-policy" | "terms" | "refund-policy" | "contact">("landing");
+    const [currentPage, setCurrentPage] = useState<"landing" | "login" | "home" | "activity" | "account" | "edit-profile" | "subscription" | "about" | "privacy-policy" | "terms" | "refund-policy" | "contact">("landing");
 
     // Update URL when page changes
     const updatePage = (page: typeof currentPage) => {
@@ -1139,6 +1141,7 @@ export default function App() {
             "landing": "/",
             "login": "/login",
             "home": "/home",
+            "activity": "/activity",
             "account": "/account",
             "edit-profile": "/edit-profile",
             "subscription": "/subscription",
@@ -1218,6 +1221,9 @@ export default function App() {
     };
 
     const handleMarkAsReached = () => {
+        // End the activity session
+        endActivity();
+        
         // Handle marking as reached (could show success message, complete booking, etc.)
         alert('Successfully reached the charger!');
         clearRoute();
@@ -1241,6 +1247,10 @@ export default function App() {
     });
 
     const [userVehicles, setUserVehicles] = useState<any[]>([]);
+
+    // Activity tracking states
+    const [activitySessions, setActivitySessions] = useState<any[]>([]);
+    const [currentActivitySession, setCurrentActivitySession] = useState<any>(null);
 
     const [showMyChargersModal, setShowMyChargersModal] = useState(false);
 
@@ -1568,6 +1578,141 @@ export default function App() {
         }
     };
 
+    const fetchActivitySessionsFromBackend = async () => {
+        try {
+            const sessions = await fetchActivitySessions();
+            
+            // Transform backend sessions to frontend format
+            const transformedSessions = sessions.map((session: any) => ({
+                id: session._id,
+                chargerName: session.chargerName,
+                chargerImage: session.chargerImage,
+                startTime: session.startTime,
+                endTime: session.endTime,
+                duration: session.duration,
+                carModel: session.carModel,
+                status: session.status,
+                portType: session.portType
+            }));
+            
+            setActivitySessions(transformedSessions);
+            
+            // Set current session only if there's an active one without an end time
+            // Filter out old sessions that might have been left as 'active' but should be completed
+            const activeSessions = transformedSessions.filter((s: any) => s.status === 'active' && !s.endTime);
+            
+            if (activeSessions.length > 0) {
+                // Get the most recent active session (sorted by start time)
+                const mostRecentActive = activeSessions.sort((a: any, b: any) => 
+                    new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
+                )[0];
+                setCurrentActivitySession(mostRecentActive);
+            } else {
+                setCurrentActivitySession(null);
+            }
+            
+            console.log('Loaded activity sessions from backend:', transformedSessions);
+        } catch (error) {
+            console.error('Error fetching activity sessions:', error);
+            setActivitySessions([]);
+        }
+    };
+
+    // Activity tracking functions
+    const startActivity = async (chargerName: string, chargerImage?: string, portType?: string, chargerId?: string) => {
+        const sessionData = {
+            chargerName,
+            chargerImage,
+            carModel: selectedCar,
+            portType,
+            chargerId: chargerId || 'unknown',
+            status: 'active'
+        };
+        
+        try {
+            const response = await createActivitySession(sessionData);
+            const session = {
+                id: response.data._id,
+                chargerName,
+                chargerImage,
+                startTime: response.data.startTime,
+                endTime: null,
+                duration: null,
+                carModel: selectedCar,
+                status: 'active',
+                portType
+            };
+            
+            setCurrentActivitySession(session);
+            setActivitySessions(prev => [session, ...prev]);
+            
+            console.log('Started activity session:', session);
+        } catch (error) {
+            console.error('Error creating activity session:', error);
+            // Fallback to local state if API fails
+            const session = {
+                id: Date.now().toString(),
+                chargerName,
+                chargerImage,
+                startTime: new Date().toISOString(),
+                endTime: null,
+                duration: null,
+                carModel: selectedCar,
+                status: 'active',
+                portType
+            };
+            
+            setCurrentActivitySession(session);
+            setActivitySessions(prev => [session, ...prev]);
+        }
+    };
+
+    const endActivity = async () => {
+        if (!currentActivitySession) return;
+        
+        const endTime = new Date().toISOString();
+        const startTime = new Date(currentActivitySession.startTime);
+        const duration = Math.floor((new Date(endTime).getTime() - startTime.getTime()) / 1000 / 60); // duration in minutes
+        
+        console.log('Duration calculated:', duration, 'minutes');
+        console.log('Start time:', currentActivitySession.startTime);
+        console.log('End time:', endTime);
+        
+        const updatedSession = {
+            ...currentActivitySession,
+            endTime,
+            duration,
+            status: 'completed'
+        };
+        
+        console.log('Updated session before setting:', updatedSession);
+        
+        setCurrentActivitySession(null);
+        
+        // Update in sessions list
+        setActivitySessions(prev => {
+            const updated = prev.map(session => 
+                session.id === updatedSession.id ? updatedSession : session
+            );
+            console.log('Updated sessions list:', updated);
+            return updated;
+        });
+        
+        // Try to update in backend
+        try {
+            await updateActivitySession(currentActivitySession.id, {
+                endTime,
+                duration,
+                status: 'completed'
+            });
+            console.log('Updated activity session in backend');
+        } catch (error) {
+            console.error('Error updating activity session in backend:', error);
+        }
+        
+        console.log('Ended activity session:', updatedSession);
+    };
+
     // Load user profile data
 
     useEffect(() => {
@@ -1603,10 +1748,12 @@ export default function App() {
                 />
             ) : currentPage === "login" ? (
                 <LoginPage
-                    onLoginSuccess={(user) => {
+                    onLoginSuccess={async (user) => {
                         setIsAuthenticated(true);
                         setUserProfile(user);
                         setUserRole(user.role);
+                        // Load activity sessions from backend
+                        await fetchActivitySessionsFromBackend();
                         updatePage("home");
                     }}
                     isDarkMode={isDarkMode}
@@ -1849,8 +1996,9 @@ export default function App() {
                                     selectedCar={selectedCar}
                                     userLocation={userLocation}
                                     chargerLocation={[selectedCharger.lat, selectedCharger.lng]}
-                                    chargerAddress={selectedCharger.address}
+                                    chargerImage={selectedCharger.image}
                                     onShowRoute={showRoute}
+                                    onStartActivity={startActivity}
                                 />
                             )}
 
@@ -1902,6 +2050,12 @@ export default function App() {
                             )}
                         </div>
                     </div>
+                ) : currentPage === "activity" ? (
+                    <ActivityPage
+                        isDarkMode={isDarkMode}
+                        sessions={activitySessions}
+                        currentSession={currentActivitySession}
+                    />
                 ) : currentPage === "account" ? (
                     <AccountPage
                         isDarkMode={isDarkMode}
@@ -1981,8 +2135,9 @@ export default function App() {
                                 selectedCar={selectedCar}
                                 userLocation={userLocation}
                                 chargerLocation={[selectedCharger.lat, selectedCharger.lng]}
-                                chargerAddress={selectedCharger.address}
+                                chargerImage={selectedCharger.image}
                                 onShowRoute={showRoute}
+                                onStartActivity={startActivity}
                             />
                         )}
 
@@ -2052,6 +2207,7 @@ export default function App() {
                         </button>
 
                         <button
+                            onClick={() => updatePage("activity")}
                             className={`flex flex-col items-center gap-0.5 transition-colors py-1 ${
                                 isDarkMode
                                     ? "text-gray-400 hover:text-white"

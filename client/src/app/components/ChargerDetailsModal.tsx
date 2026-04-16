@@ -16,8 +16,9 @@ interface ChargerDetailsModalProps {
   selectedCar: string;
   userLocation?: [number, number];
   chargerLocation?: [number, number];
-  chargerAddress?: string;
+  chargerImage?: string;
   onShowRoute?: (start: [number, number], end: [number, number]) => void;
+  onStartActivity?: (chargerName: string, chargerImage?: string, portType?: string, chargerId?: string) => void;
 }
 
 function ChargerDetailsModalComponent({
@@ -31,7 +32,9 @@ function ChargerDetailsModalComponent({
   selectedCar,
   userLocation = [28.6139, 77.209], // Default to Delhi
   chargerLocation = [28.6139, 77.209], // Default to Delhi
+  chargerImage,
   onShowRoute,
+  onStartActivity,
 }: ChargerDetailsModalProps) {
   const [bookingMessage, setBookingMessage] = useState<string | null>(null);
   const [isBooking, setIsBooking] = useState(false);
@@ -120,7 +123,7 @@ function ChargerDetailsModalComponent({
     return iconMap[type] || iconMap.default;
   };
 
-  const handleBook = async (connectorId: string) => {
+  const handleBook = async () => {
     if (!chargerId || !selectedCar) {
       setBookingMessage('Please select a car first');
       return;
@@ -140,6 +143,13 @@ function ChargerDetailsModalComponent({
       if (response.success) {
         setBookingMessage('Booking successful! Showing route...');
         
+        // Get the selected connector's type
+        const selectedConnector = connectors.find(c => c.id === bookConfirm);
+        const portType = selectedConnector?.connector_type;
+        
+        // Start activity tracking when booking is successful
+        onStartActivity?.(stationName, chargerImage, portType, chargerId);
+         
         // Show route on main map after a short delay
         setTimeout(() => {
           onShowRoute?.(userLocation, chargerLocation);
@@ -328,7 +338,7 @@ function ChargerDetailsModalComponent({
                   onClick={() => {
                     if (bookConfirm) {
                       console.log('bookConfirm set to:', bookConfirm);
-                      handleBook(bookConfirm);
+                      handleBook();
                     }
                   }}
                   disabled={isBooking || !selectedCar}
