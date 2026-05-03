@@ -12,7 +12,7 @@ export const generalRateLimiter = rateLimit({
 // Strict rate limiter for sensitive routes (login, register, password reset)
 export const strictRateLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // Limit each IP to 5 requests per windowMs
+    max: 20, // Limit each IP to 20 requests per windowMs
     message: "Too many attempts from this IP, please try again later.",
     standardHeaders: true,
     legacyHeaders: false,
