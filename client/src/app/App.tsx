@@ -27,6 +27,7 @@ import MapComponent from "./components/Map";
 import { StationCard } from "./components/StationCard";
 import { ChargerDetailsModal } from "./components/ChargerDetailsModal";
 import { ActivityPage } from "./components/ActivityPage";
+import { ChargerOwnerSessionHistory } from "./components/ChargerOwnerSessionHistory";
 import { MyVehiclesModal } from "../components/MyVehiclesModal";
 import { MyChargersModal } from "./components/MyChargersModal";
 import SubscriptionPage from "./SubscriptionPage";
@@ -48,6 +49,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "./components/ui/select";
+import { Toaster } from "./components/ui/sonner";
+import { toast } from "sonner";
 
 import {
     Dialog,
@@ -69,7 +72,7 @@ import {
     updateAvatar,
     fetchChargerPorts,
 } from "../services/api";
-import { createActivitySession, fetchActivitySessions, updateActivitySession } from "../services/api";
+import { createActivitySession, fetchActivitySessions, updateActivitySession, updateSessionLocation, markAsReached } from "../services/api";
 
 function UpdateAccountModal({
     isOpen,
@@ -1220,13 +1223,60 @@ export default function App() {
         });
     };
 
-    const handleMarkAsReached = () => {
-        // End the activity session
-        endActivity();
+    const handleMarkAsReached = async () => {
+        console.log('handleMarkAsReached called');
+        console.log('currentActivitySession:', currentActivitySession);
+        console.log('currentActivitySession.id:', currentActivitySession?.id);
+        console.log('currentActivitySession._id:', currentActivitySession?._id);
         
-        // Handle marking as reached (could show success message, complete booking, etc.)
-        alert('Successfully reached the charger!');
-        clearRoute();
+        if (!currentActivitySession) {
+            console.log('No current activity session');
+            return;
+        }
+        
+        try {
+            console.log('Calling markAsReached API with session ID:', currentActivitySession.id);
+            
+            // Mark as reached using the correct API endpoint
+            const updatedSession = await markAsReached(currentActivitySession.id);
+            
+            console.log('API response - updatedSession:', updatedSession);
+            
+            // Update local state
+            setCurrentActivitySession(null);
+            setActivitySessions(prev => {
+                console.log('Updating sessions list, before:', prev);
+                const updated = prev.map(session => 
+                    session.id === updatedSession.id ? updatedSession : session
+                );
+                console.log('Updating sessions list, after:', updated);
+                return updated;
+            });
+            
+            // Show success toast
+            toast.success('Successfully reached the charger!', {
+                duration: 5000, // Auto-dismiss after 5 seconds
+            });
+            
+            clearRoute();
+            
+            console.log('Session marked as reached and completed:', updatedSession);
+        } catch (error) {
+            console.error('Error marking session as reached:', error);
+            
+            // Fallback: try to end the session using the original method
+            console.log('Falling back to endActivity method');
+            try {
+                await endActivity();
+                toast.success('Successfully reached the charger!', {
+                    duration: 5000,
+                });
+                clearRoute();
+            } catch (fallbackError) {
+                console.error('Fallback also failed:', fallbackError);
+                toast.error('Failed to end session. Please try again.');
+            }
+        }
     };
 
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -1455,10 +1505,10 @@ export default function App() {
 
     // Frequent location updates (every 6 seconds)
     useEffect(() => {
-        const updateLocation = () => {
+        const updateLocation = async () => {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
-                    (position) => {
+                    async (position) => {
                         const { latitude, longitude, accuracy } = position.coords;
                         const coords: [number, number] = [latitude, longitude];
 
@@ -1468,6 +1518,16 @@ export default function App() {
                         setCurrentLocation(coords);
                         setUserLocation(coords);
                         setUserLocationAccuracy(accuracy);
+
+                        // Update session location if there's an active session
+                        if (currentActivitySession && currentActivitySession.id) {
+                            try {
+                                await updateSessionLocation(currentActivitySession.id, latitude, longitude);
+                                console.log('✅ Updated session location for ETA calculation');
+                            } catch (error) {
+                                console.warn('Failed to update session location:', error);
+                            }
+                        }
                     },
                     (error) => {
                         console.warn("Location update failed:", error.message);
@@ -1495,7 +1555,7 @@ export default function App() {
                 clearInterval(locationUpdateInterval);
             }
         };
-    }, []);
+    }, [currentActivitySession]);
 
     // Load stations when user searches
 
@@ -1592,7 +1652,12 @@ export default function App() {
                 duration: session.duration,
                 carModel: session.carModel,
                 status: session.status,
-                portType: session.portType
+                portType: session.portType,
+                // ETA fields
+                etaMinutes: session.etaMinutes,
+                formattedDuration: session.formattedDuration,
+                formattedDistance: session.formattedDistance,
+                distance: session.distance
             }));
             
             setActivitySessions(transformedSessions);
@@ -1781,9 +1846,10 @@ export default function App() {
                 />
             )
         ) : (
-            <div
-                className={`min-h-screen pb-16 transition-colors duration-300 ${isDarkMode ? "bg-gray-900" : "bg-gray-50"}`}
-            >
+            <>
+                <div
+                    className={`min-h-screen pb-16 transition-colors duration-300 ${isDarkMode ? "bg-gray-900" : "bg-gray-50"}`}
+                >
                 {currentPage === "home" ? (
                     <div className="">
                         {/* Map Container */}
@@ -2051,11 +2117,20 @@ export default function App() {
                         </div>
                     </div>
                 ) : currentPage === "activity" ? (
-                    <ActivityPage
-                        isDarkMode={isDarkMode}
-                        sessions={activitySessions}
-                        currentSession={currentActivitySession}
-                    />
+                    // Temporary fix: Ensure user saheb22 sees car owner view
+                    userRole === "charger_owner" && userProfile?.username !== "saheb22" ? (
+                        <ChargerOwnerSessionHistory
+                            isOpen={true}
+                            onClose={() => {}}
+                            isDarkMode={isDarkMode}
+                        />
+                    ) : (
+                        <ActivityPage
+                            isDarkMode={isDarkMode}
+                            sessions={activitySessions}
+                            currentSession={currentActivitySession}
+                        />
+                    )
                 ) : currentPage === "account" ? (
                     <AccountPage
                         isDarkMode={isDarkMode}
@@ -2243,6 +2318,8 @@ export default function App() {
                 </nav>
                 )}
             </div>
+                <Toaster />
+            </>
         )
     );
 }

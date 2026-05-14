@@ -8,6 +8,7 @@ import chargerRoutes from "./routes/charger.routes.js";
 import subscriptionRoutes from "./routes/subscription.routes.js";
 import contactRoutes from "./routes/contact.routes.js";
 import activitySessionRoutes from "./routes/activitySession.routes.js";
+import chargingOwnerSessionRoutes from "./routes/chargingOwnerSession.routes.js";
 
 import { ApiResponse } from "./utils/ApiResponse.js";
 import { ApiError } from "./utils/ApiError.js";
@@ -52,6 +53,7 @@ app.use("/api/v1/subscriptions", subscriptionRoutes);
 app.use("/api/v1/contact", contactRoutes);
 app.use("/api/v1/carmodels", carModelRoutes); // For backward compatibility with old routes
 app.use("/api/v1/activity-sessions", activitySessionRoutes);
+app.use("/api/v1/charging-owner-sessions", chargingOwnerSessionRoutes);
 
 app.get("/home", (req, res) => {
     res.send("Backend is running");

@@ -42,6 +42,21 @@ const activitySessionSchema = new mongoose.Schema({
     chargerId: {
         type: String,
         required: true
+    },
+    reached: {
+        type: Boolean,
+        default: false
+    },
+    evOwnerLocation: {
+        type: {
+            type: String,
+            enum: ['Point'],
+            default: 'Point'
+        },
+        coordinates: {
+            type: [Number],
+            default: [0, 0] // [longitude, latitude]
+        }
     }
 }, {
     timestamps: true

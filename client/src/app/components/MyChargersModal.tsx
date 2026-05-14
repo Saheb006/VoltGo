@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { Zap, X, Plug, Car, MoreVertical } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Zap, Plug, Car, MoreVertical } from "lucide-react";
 import {
     Dialog,
     DialogContent,

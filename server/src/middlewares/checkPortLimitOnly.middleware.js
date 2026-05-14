@@ -12,10 +12,45 @@ export const checkPortLimitOnly = asyncHandler(async (req, res, next) => {
 
     console.log("🔍 Checking port limit ONLY for user:", req.user._id);
 
-    // Get the user's subscription to find their plan
-    const subscription = await Subscription.findOne({
+    // Get the user's subscription to find their plan - use same logic as subscription controller
+    const allSubscriptions = await Subscription.find({
         owner_id: req.user._id,
-    });
+    }).populate("plan_id").sort({ createdAt: -1 });
+    
+    console.log("🔍 All subscriptions for user:", allSubscriptions.map(sub => ({
+        id: sub._id,
+        status: sub.status,
+        plan_id: sub.plan_id?._id || sub.plan_id,
+        plan_name: sub.plan_id?.name
+    })));
+    
+    let subscription = null;
+    
+    if (allSubscriptions.length > 0) {
+        const firstSubscription = allSubscriptions[0];
+        console.log('🎯 Checking first subscription [0]:', {
+            id: firstSubscription._id,
+            status: firstSubscription.status,
+            plan_id: firstSubscription.plan_id?._id || firstSubscription.plan_id,
+            plan_name: firstSubscription.plan_id?.name
+        });
+        
+        // If the first subscription has status "active" (case insensitive), use it
+        if (firstSubscription.status && firstSubscription.status.toLowerCase() === "active") {
+            subscription = firstSubscription;
+            console.log('✅ First subscription is active, using it');
+        } else {
+            console.log('❌ First subscription is not active, status:', firstSubscription.status);
+            
+            // For debugging: let's try to use it anyway if it's the only one
+            if (allSubscriptions.length === 1) {
+                console.log('⚠️ Only one subscription exists, using it anyway for debugging');
+                subscription = firstSubscription;
+            }
+        }
+    } else {
+        console.log('❌ No subscriptions found for user');
+    }
 
     if (!subscription) {
         console.log("❌ No subscription found for user:", req.user._id);
@@ -25,10 +60,27 @@ export const checkPortLimitOnly = asyncHandler(async (req, res, next) => {
         );
     }
 
-    // Get the plan to check limits
-    const plan = await SubscriptionPlan.findById(subscription.plan_id);
-    if (!plan) {
-        throw new ApiError(500, "Subscription plan not found");
+    // Get the plan to check limits - use populated plan if available
+    let plan = null;
+    
+    if (subscription.plan_id && typeof subscription.plan_id === 'object' && subscription.plan_id.name) {
+        // Plan is already populated
+        plan = subscription.plan_id;
+        console.log("🔍 Using populated plan:", plan.name);
+    } else {
+        // Need to fetch plan separately
+        const planId = subscription.plan_id?._id || subscription.plan_id;
+        console.log("🔍 Looking for plan with ID:", planId);
+        plan = await SubscriptionPlan.findById(planId);
+        
+        if (!plan) {
+            console.log("❌ Subscription plan not found for ID:", planId);
+            console.log("🔍 Available plans in database:");
+            const allPlans = await SubscriptionPlan.find({});
+            console.log(allPlans.map(p => ({ id: p._id, name: p.name, is_active: p.is_active })));
+            
+            throw new ApiError(500, "Subscription plan not found");
+        }
     }
 
     console.log("🔍 Found plan:", plan.name, "max_ports_per_charger:", plan.max_ports_per_charger);

@@ -42,11 +42,22 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ isDarkMode, setCurr
             setIsLoading(true);
             setError(null);
 
+            console.log('🔄 Loading subscription data...');
+
             const [plansData, currentSub, historyData] = await Promise.all([
                 getSubscriptionPlans(),
-                getMySubscription().catch(() => null), // May not have active subscription
+                getMySubscription().catch((err) => {
+                    console.log('❌ getMySubscription failed:', err);
+                    return null; // May not have active subscription
+                }),
                 listMySubscriptions(),
             ]);
+
+            console.log('📊 Subscription data loaded:', {
+                plans: plansData.length,
+                currentSubscription: currentSub,
+                history: historyData.length
+            });
 
             setPlans(plansData);
             setCurrentSubscription(currentSub);
@@ -95,7 +106,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ isDarkMode, setCurr
                 )}
 
                 {/* Current Subscription */}
-                {currentSubscription && (
+                {currentSubscription ? (
                     <div className={`mb-6 p-6 rounded-lg shadow-sm border ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}>
                         <div className="mb-4">
                             <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -124,6 +135,42 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ isDarkMode, setCurr
                                 </span>
                             </div>
                         </div>
+                    </div>
+                ) : (
+                    <div className={`mb-6 p-6 rounded-lg shadow-sm border ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}>
+                        <div className="mb-4">
+                            <h3 className="text-lg font-semibold flex items-center gap-2">
+                                <div className="w-5 h-5 rounded-full bg-gray-400" />
+                                No Active Subscription
+                            </h3>
+                        </div>
+                        <p className="text-gray-600 dark:text-gray-400 mb-4">
+                            You don't have an active subscription. Choose a plan below to get started.
+                        </p>
+                        {subscriptionHistory.length > 0 && (
+                            <div>
+                                <p className="text-sm font-medium mb-2">Previous subscriptions:</p>
+                                <div className="space-y-2">
+                                    {subscriptionHistory.slice(0, 3).map((sub) => (
+                                        <div key={sub._id} className={`text-sm p-2 rounded ${isDarkMode ? "bg-gray-700" : "bg-gray-100"}`}>
+                                            <span className="font-medium">{sub.plan_id?.name || 'Unknown'}</span>
+                                            <span className={`ml-2 px-2 py-1 rounded text-xs ${
+                                                sub.status === "active" ? "bg-green-100 text-green-800" :
+                                                sub.status === "expired" ? "bg-red-100 text-red-800" :
+                                                "bg-gray-100 text-gray-800"
+                                            }`}>
+                                                {sub.status || 'unknown'}
+                                            </span>
+                                            {sub.ends_at && (
+                                                <span className="text-xs text-gray-500 ml-2">
+                                                    Ended: {new Date(sub.ends_at).toLocaleDateString()}
+                                                </span>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 

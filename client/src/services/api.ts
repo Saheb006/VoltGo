@@ -1059,5 +1059,130 @@ export const updateActivitySession = async (sessionId: string, updateData: {
     }
 
     const data = await response.json();
-    return data;
+    return data.data;
+};
+
+export const markAsReached = async (sessionId: string): Promise<any> => {
+    console.log('markAsReached API called with sessionId:', sessionId);
+    console.log('Session ID type:', typeof sessionId);
+    
+    // Ensure session ID is a string
+    const sessionStr = String(sessionId);
+    console.log('Session ID as string:', sessionStr);
+    
+    const token = getAuthToken();
+    console.log('Token exists:', !!token);
+    
+    const url = `${API_BASE_URL}/api/v1/activity-sessions/${sessionStr}/reached`;
+    console.log('Making PATCH request to:', url);
+    
+    const response = await fetch(url, {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+    });
+
+    console.log('Response status:', response.status, response.statusText);
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('API Error response:', errorData);
+        throw new Error(errorData.error || "Failed to mark session as reached");
+    }
+
+    const data = await response.json();
+    console.log('API Success response:', data);
+    return data.data;
+};
+
+export const updateSessionLocation = async (sessionId: string, lat: number, lng: number): Promise<any> => {
+    const token = getAuthToken();
+    const response = await fetch(`${API_BASE_URL}/api/v1/activity-sessions/${sessionId}/location`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ lat, lng }),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to update session location");
+    }
+
+    const data = await response.json();
+    return data.data;
+};
+
+// Charger Owner Session API functions
+export const fetchChargingOwnerSessions = async (): Promise<{
+    currentSessions: any[];
+    pastSessions: any[];
+}> => {
+    const token = getAuthToken();
+    const response = await fetch(`${API_BASE_URL}/api/v1/charging-owner-sessions`, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to fetch charging owner sessions");
+    }
+
+    const data = await response.json();
+    return data.data || { currentSessions: [], pastSessions: [] };
+};
+
+export const fetchChargerSessions = async (chargerId: string): Promise<{
+    currentSessions: any[];
+    pastSessions: any[];
+}> => {
+    const token = getAuthToken();
+    const response = await fetch(`${API_BASE_URL}/api/v1/charging-owner-sessions/charger/${chargerId}`, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to fetch charger sessions");
+    }
+
+    const data = await response.json();
+    return data.data || { currentSessions: [], pastSessions: [] };
+};
+
+export const markSessionAsCompleted = async (sessionId: string): Promise<any> => {
+    const token = getAuthToken();
+    const response = await fetch(`${API_BASE_URL}/api/v1/charging-owner-sessions/${sessionId}/complete`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ status: 'completed' }),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to mark session as completed");
+    }
+
+    const data = await response.json();
+    return data.data;
 };
