@@ -22,8 +22,6 @@ export interface Station {
     distance: string;
     time: string;
     chargerType: string;
-    price: string;
-    parking: string;
     image: string;
     available: boolean;
     lat: number;

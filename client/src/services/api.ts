@@ -177,10 +177,6 @@ export const fetchNearbyStations = async (
 
             chargerType: charger.charger_type || "AC",
 
-            price: "₹12/kWh", // You can add pricing to backend later
-
-            parking: "+₹20 parking",
-
             image:
                 charger.image_url ||
                 "https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxFViUyMGNoYXJnaW5nJTIwc3RhdGlvbnxlbnwxfHx8fDE3Njc1OTQ3OTF8MA&ixlib=rb-4.1.0&q=80&w=400",
@@ -679,8 +675,6 @@ export const fetchMyChargers = async (): Promise<Station[]> => {
             distance: `${Math.round(charger.distance || 0)}m`,
             time: `${Math.round((charger.distance || 0) / 100)}min`,
             chargerType: charger.charger_type || "AC",
-            price: "₹12/kWh", // You can add pricing to backend later
-            parking: "+₹20 parking",
             image: charger.image_url || "https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxFViUyMGNoYXJnaW5nJTIwc3RhdGlvbnxlbnwxfHx8fDE3Njc1OTQ3OTF8MA&ixlib=rb-4.1.0&q=80&w=400",
             available: charger.status === "active",
             lat: coordinates[1] || 0,
@@ -741,8 +735,6 @@ export const createCharger = async (chargerData: {
             distance: "0m",
             time: "0min",
             chargerType: data.data.charger_type,
-            price: "₹12/kWh",
-            parking: "+₹20 parking",
             image: data.data.image_url || "https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxFViUyMGNoYXJnaW5nJTIwc3RhdGlvbnxlbnwxfHx8fDE3Njc1OTQ3OTF8MA&ixlib=rb-4.1.0&q=80&w=400",
             available: data.data.status === "active",
             lat: data.data.location?.coordinates?.[1] || 0,

@@ -18,8 +18,6 @@ interface StationCardProps {
     distance?: string;
     time?: string;
     chargerType?: string;
-    price?: string;
-    parking?: string;
     image?: string;
     isDarkMode?: boolean;
     onClick?: () => void;
@@ -32,8 +30,6 @@ export function StationCard({
     distance = "N/A",
     time = "N/A",
     chargerType = "Type not specified",
-    price = "N/A",
-    parking = "N/A",
     image = "https://via.placeholder.com/96",
     isDarkMode = false,
     onClick,
@@ -89,16 +85,6 @@ export function StationCard({
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3 text-sm">
-                    <span
-                        className={`font-semibold ${isDarkMode ? "text-blue-400" : "text-blue-600"}`}
-                    >
-                        {price}
-                    </span>
-                    <span className={`text-xs ${isDarkMode ? "text-gray-500" : "text-gray-500"}`}>
-                        {parking}
-                    </span>
-                </div>
             </div>
         </div>
     );

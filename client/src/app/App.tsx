@@ -1978,8 +1978,6 @@ export default function App() {
                                                     distance={station.distance}
                                                     time={station.time}
                                                     chargerType={station.chargerType}
-                                                    price={station.price}
-                                                    parking={station.parking}
                                                     image={station.image}
                                                     isDarkMode={isDarkMode}
                                                     onClick={() => handleStationSelect(station.id.toString())}
