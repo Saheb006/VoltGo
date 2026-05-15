@@ -1062,6 +1062,12 @@ export const markAsReached = async (sessionId: string): Promise<any> => {
     const sessionStr = String(sessionId);
     console.log('Session ID as string:', sessionStr);
     
+    // Validate sessionId to prevent URL injection attacks
+    // Only allow alphanumeric characters, hyphens, and underscores (common ID formats)
+    if (!/^[a-zA-Z0-9_-]+$/.test(sessionStr)) {
+        throw new Error("Invalid session ID format");
+    }
+    
     const token = getAuthToken();
     console.log('Token exists:', !!token);
     
